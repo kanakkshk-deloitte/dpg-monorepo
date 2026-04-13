@@ -474,12 +474,10 @@ export function HomePage() {
               : resolveTargetInstanceUrl(myItem, network, apiConfig.getUrl(), 'source');
             
             // Resolve target item instance URL dynamically
-            const targetItemInstanceUrl = resolveTargetInstanceUrl(
-              targetItem,
-              network,
-              apiConfig.getUrl(),
-              'target'
-            );
+            // IMPORTANT: If target item has localhost, use current API as fallback
+            const targetItemInstanceUrl = targetItem.item_instance_url?.includes('localhost')
+              ? apiConfig.getUrl()  // Use current API where the item was actually fetched from
+              : resolveTargetInstanceUrl(targetItem, network, apiConfig.getUrl(), 'target');
 
             await performAction(
               {
