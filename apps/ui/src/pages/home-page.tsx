@@ -467,12 +467,11 @@ export function HomePage() {
             }
 
             // Resolve source item instance URL (where my profile is stored)
-            const sourceItemInstanceUrl = resolveTargetInstanceUrl(
-              myItem,
-              network,
-              apiConfig.getUrl(),
-              'source'
-            );
+            // IMPORTANT: If the source item has localhost as instance_url, 
+            // it means it was created on the current API instance
+            const sourceItemInstanceUrl = myItem.item_instance_url?.includes('localhost')
+              ? apiConfig.getUrl()  // Use current API where the item was actually created
+              : resolveTargetInstanceUrl(myItem, network, apiConfig.getUrl(), 'source');
             
             // Resolve target item instance URL dynamically
             const targetItemInstanceUrl = resolveTargetInstanceUrl(
