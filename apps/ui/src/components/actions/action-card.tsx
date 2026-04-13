@@ -92,10 +92,10 @@ function getActionTypeClass(actionName: string): string {
 }
 
 function formatItemLocation(
-  latitude: number | null,
-  longitude: number | null
+  latitude: number | null | undefined,
+  longitude: number | null | undefined
 ): string | null {
-  if (latitude === null || longitude === null) return null;
+  if (latitude == null || longitude == null) return null;
   return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 }
 

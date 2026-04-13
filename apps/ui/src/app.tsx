@@ -19,6 +19,7 @@ export function App() {
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/otp" element={<OtpPage />} />
           <Route path="/my-actions" element={<MyActionsPage />} />
+          <Route path="/my-actions/*" element={<MyActionsPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
