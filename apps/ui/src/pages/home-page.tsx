@@ -53,18 +53,6 @@ function getAllInteractions(network: DotNetworkSchema): Array<{ actionType: stri
   return interactions;
 }
 
-function findInteraction(
-  network: DotNetworkSchema,
-  fromDomain: string,
-  toDomain: string
-): { actionType: string; interaction: DotNetworkInteraction } | null {
-  for (const [actionType, action] of Object.entries(network.actions)) {
-    const found = action.interactions.find(i => i.from_domain === fromDomain && i.to_domain === toDomain);
-    if (found) return { actionType, interaction: found };
-  }
-  return null;
-}
-
 export function HomePage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
