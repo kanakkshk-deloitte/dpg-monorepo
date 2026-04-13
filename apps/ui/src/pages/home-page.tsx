@@ -277,21 +277,45 @@ export function HomePage() {
     return map;
   }, [network]);
 
-  // Active action: matching interaction for the current → selected direction
+  // Get all available actions for a given target domain
+  const getActionsForDomain = React.useCallback(
+    (targetDomainName: string): DotActionSchema[] => {
+      if (!network || !myItem) return [];
+
+      const actions: DotActionSchema[] = [];
+
+      // Iterate through all action types defined in the network schema
+      for (const [actionName, actionConfig] of Object.entries(network.actions)) {
+        if (!actionConfig?.interactions) continue;
+
+        // Find matching interactions for currentDomain -> targetDomain
+        const matchingInteractions = actionConfig.interactions.filter(
+          (i) => i.from_domain === currentDomain && i.to_domain === targetDomainName
+        );
+
+        for (const interaction of matchingInteractions) {
+          actions.push({
+            action_type: actionName,
+            from_domain: interaction.from_domain,
+            to_domain: interaction.to_domain,
+            requirement_schema: interaction.requirement_schema,
+            event_schema: interaction.event_schema,
+          });
+        }
+      }
+
+      return actions;
+    },
+    [network, currentDomain, myItem]
+  );
+
+  // Legacy: single active action for the selected domain (for CardGrid)
   const activeAction = React.useMemo<DotActionSchema | null>(() => {
-    if (!network || !myItem) return null;
     const toDomain = selectedDomain ?? visibleDomains[0]?.name;
     if (!toDomain) return null;
-    const found = findInteraction(network, currentDomain, toDomain);
-    if (!found) return null;
-    return {
-      action_type: found.actionType,
-      from_domain: found.interaction.from_domain,
-      to_domain: found.interaction.to_domain,
-      requirement_schema: found.interaction.requirement_schema,
-      event_schema: found.interaction.event_schema,
-    };
-  }, [network, currentDomain, selectedDomain, visibleDomains, myItem]);
+    const actions = getActionsForDomain(toDomain);
+    return actions[0] ?? null;
+  }, [getActionsForDomain, selectedDomain, visibleDomains]);
 
   // Build per-domain card items filtered by search
   const filteredDomainItems = React.useMemo(() => {
@@ -350,7 +374,12 @@ export function HomePage() {
     (d) => d.name === selectedDomain
   )?.description;
 
-  const actions = activeAction ? [activeAction] : [];
+  // Get dynamic actions for the selected domain
+  const actions = selectedDomain
+    ? getActionsForDomain(selectedDomain)
+    : activeAction
+      ? [activeAction]
+      : [];
 
   if (!network) {
     return (
@@ -395,6 +424,14 @@ export function HomePage() {
               toast.error('Could not find the target item');
               throw new Error('Target item not found');
             }
+
+            // Resolve target item instance URL dynamically
+            const targetItemInstanceUrl =
+              targetItem.item_instance_url ??
+              network?.instances?.find((i) => i.domain_name === targetItem.item_domain)
+                ?.instance_url ??
+              apiConfig.getUrl();
+
             await performAction({
               action_name: actionType,
               source_item: {
@@ -408,13 +445,11 @@ export function HomePage() {
                 item_domain: targetItem.item_domain,
                 item_type: targetItem.item_type,
                 item_id: targetItem.item_id,
+                item_instance_url: targetItemInstanceUrl,
               },
               requirements_snapshot: formData,
-              created_by: user.id,
-              response_event_type: 'action_response',
-              response_event_payload: { status: 'pending', message: '' },
             });
-            toast.success('Connection request sent!');
+            toast.success(`${actionType.charAt(0).toUpperCase() + actionType.slice(1)} request sent!`);
           }}
         >
           {(triggerAction) =>
@@ -425,21 +460,12 @@ export function HomePage() {
                   const domainSchema = domain.item_schemas
                     ? (Object.values(domain.item_schemas)[0] as import('@rjsf/utils').RJSFSchema)
                     : undefined;
-                  const found = findInteraction(network, currentDomain, domain.name);
-                  const domainAction: DotActionSchema | null =
-                    myItem && found
-                      ? {
-                          action_type: found.actionType,
-                          from_domain: found.interaction.from_domain,
-                          to_domain: found.interaction.to_domain,
-                          requirement_schema: found.interaction.requirement_schema,
-                          event_schema: found.interaction.event_schema,
-                        }
-                      : null;
+                  // Get all dynamic actions for this domain
+                  const domainActions = getActionsForDomain(domain.name);
                   return (filteredDomainItems[domain.name] ?? []).map((item) => ({
                     item,
                     schema: domainSchema,
-                    domainAction,
+                    domainActions,
                     domainDescription: domain.description,
                   }));
                 });
@@ -466,13 +492,13 @@ export function HomePage() {
 
                 return (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {allFlatItems.map(({ item, schema, domainAction, domainDescription }) => (
+                    {allFlatItems.map(({ item, schema, domainActions, domainDescription }) => (
                       <DomainCard
                         key={item.id}
                         schema={schema!}
                         schemaDescription={domainDescription}
                         data={item.data}
-                        actions={domainAction ? [domainAction] : []}
+                        actions={domainActions}
                         onAction={(type, actionSchema) =>
                           triggerAction(type, actionSchema, item.id)
                         }

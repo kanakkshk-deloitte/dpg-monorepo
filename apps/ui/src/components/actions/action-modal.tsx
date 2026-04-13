@@ -84,12 +84,17 @@ export function ActionModal({
     ? { type: 'submit' as const, form: ACTION_FORM_ID }
     : { type: 'button' as const, onClick: () => onSubmit({}) };
 
+  // Dynamic action title based on action type
+  const actionTitle = actionSchema.action_type
+    ? actionSchema.action_type.charAt(0).toUpperCase() + actionSchema.action_type.slice(1)
+    : 'Connect';
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
-            <DrawerTitle>Connect</DrawerTitle>
+            <DrawerTitle>{actionTitle}</DrawerTitle>
             <DrawerDescription>
               {actionSchema.from_domain} → {actionSchema.to_domain}
             </DrawerDescription>
@@ -99,7 +104,7 @@ export function ActionModal({
           </div>
           <DrawerFooter>
             <Button {...confirmButtonProps} disabled={loading}>
-              {loading ? 'Connecting...' : 'Confirm'}
+              {loading ? `${actionTitle}ing...` : 'Confirm'}
             </Button>
             <Button
               variant="outline"
@@ -118,7 +123,7 @@ export function ActionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Connect</DialogTitle>
+          <DialogTitle>{actionTitle}</DialogTitle>
           <DialogDescription>
             {actionSchema.from_domain} → {actionSchema.to_domain}
           </DialogDescription>
@@ -135,7 +140,7 @@ export function ActionModal({
             Cancel
           </Button>
           <Button {...confirmButtonProps} disabled={loading}>
-            {loading ? 'Connecting...' : 'Confirm'}
+            {loading ? `${actionTitle}ing...` : 'Confirm'}
           </Button>
         </DialogFooter>
       </DialogContent>
