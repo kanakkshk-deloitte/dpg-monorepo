@@ -1,6 +1,31 @@
+import axios from 'axios';
 import { createApiClient } from './api-client';
+import { getAuthToken } from './auth-token';
 
 const apiClient = createApiClient();
+
+/**
+ * Create an API client for a specific instance URL
+ */
+function createInstanceApiClient(instanceUrl: string) {
+  const client = axios.create({
+    baseURL: instanceUrl,
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  client.interceptors.request.use((config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+
+  return client;
+}
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -170,11 +195,24 @@ export interface FetchActionEventsQuery {
 /**
  * Perform an action (initiate cross-instance action)
  * Source user calls this to start an action with a target item
+ * 
+ * Note: This MUST be called on the SOURCE instance (where source item exists).
+ * The source instance validates the source item exists, then forwards to target.
+ * 
+ * @param payload - The action payload
+ * @param sourceInstanceUrl - Optional: URL of the source instance. 
+ *   If not provided, uses default API. Should be the instance where source item exists.
  */
 export async function performAction(
-  payload: PerformActionPayload
+  payload: PerformActionPayload,
+  sourceInstanceUrl?: string
 ): Promise<PerformActionResponse> {
-  const response = await apiClient.post<PerformActionResponse>(
+  // Use source instance URL if provided, otherwise fall back to default API client
+  const client = sourceInstanceUrl 
+    ? createInstanceApiClient(sourceInstanceUrl)
+    : apiClient;
+    
+  const response = await client.post<PerformActionResponse>(
     '/api/v1/action/perform',
     payload
   );

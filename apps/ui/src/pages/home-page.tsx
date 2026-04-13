@@ -453,6 +453,13 @@ export function HomePage() {
               throw new Error('Target item not found');
             }
 
+            // Resolve source item instance URL (where my profile is stored)
+            const sourceItemInstanceUrl = resolveTargetInstanceUrl(
+              myItem,
+              network,
+              apiConfig.getUrl()
+            );
+            
             // Resolve target item instance URL dynamically
             const targetItemInstanceUrl = resolveTargetInstanceUrl(
               targetItem,
@@ -460,23 +467,26 @@ export function HomePage() {
               apiConfig.getUrl()
             );
 
-            await performAction({
-              action_name: actionType,
-              source_item: {
-                item_network: myItem.item_network,
-                item_domain: myItem.item_domain,
-                item_type: myItem.item_type,
-                item_id: myItem.item_id,
+            await performAction(
+              {
+                action_name: actionType,
+                source_item: {
+                  item_network: myItem.item_network,
+                  item_domain: myItem.item_domain,
+                  item_type: myItem.item_type,
+                  item_id: myItem.item_id,
+                },
+                target_item: {
+                  item_network: targetItem.item_network,
+                  item_domain: targetItem.item_domain,
+                  item_type: targetItem.item_type,
+                  item_id: targetItem.item_id,
+                  item_instance_url: targetItemInstanceUrl,
+                },
+                requirements_snapshot: formData,
               },
-              target_item: {
-                item_network: targetItem.item_network,
-                item_domain: targetItem.item_domain,
-                item_type: targetItem.item_type,
-                item_id: targetItem.item_id,
-                item_instance_url: targetItemInstanceUrl,
-              },
-              requirements_snapshot: formData,
-            });
+              sourceItemInstanceUrl // Call the SOURCE instance (where myItem exists)
+            );
             toast.success(`${actionType.charAt(0).toUpperCase() + actionType.slice(1)} request sent!`);
           }}
         >
