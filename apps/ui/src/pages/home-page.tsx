@@ -63,8 +63,17 @@ function getAllInteractions(network: DotNetworkSchema): Array<{ actionType: stri
 function resolveTargetInstanceUrl(
   targetItem: Item,
   network: DotNetworkSchema | null,
-  currentApiUrl: string
+  currentApiUrl: string,
+  itemType: 'source' | 'target' = 'target'
 ): string {
+  console.log(`🔍 Resolving ${itemType} instance URL:`, {
+    itemId: targetItem.item_id,
+    itemDomain: targetItem.item_domain,
+    itemInstanceUrl: targetItem.item_instance_url,
+    currentApiUrl,
+    networkInstances: network?.instances?.map(i => ({ domain: i.domain_name, url: i.instance_url })),
+  });
+
   // Priority 1: Use item's instance URL if it exists and is valid (not localhost in production)
   if (targetItem.item_instance_url) {
     // Check if it's a valid URL (not just http://localhost in production)
@@ -74,8 +83,10 @@ function resolveTargetInstanceUrl(
                          !currentApiUrl.includes('127.0.0.1');
     
     if (!isLocalhost || !isProduction) {
+      console.log(`✅ Using item's instance_url: ${targetItem.item_instance_url}`);
       return targetItem.item_instance_url;
     }
+    console.log(`⚠️ Item has localhost URL in production, skipping: ${targetItem.item_instance_url}`);
     // If localhost in production, continue to fallback
   }
 
@@ -85,11 +96,13 @@ function resolveTargetInstanceUrl(
       (i) => i.domain_name === targetItem.item_domain
     );
     if (instanceConfig?.instance_url) {
+      console.log(`✅ Using network.instances lookup: ${instanceConfig.instance_url}`);
       return instanceConfig.instance_url;
     }
   }
 
   // Priority 3: Fallback to current API URL
+  console.log(`⚠️ Fallback to current API URL: ${currentApiUrl}`);
   return currentApiUrl;
 }
 
@@ -457,14 +470,16 @@ export function HomePage() {
             const sourceItemInstanceUrl = resolveTargetInstanceUrl(
               myItem,
               network,
-              apiConfig.getUrl()
+              apiConfig.getUrl(),
+              'source'
             );
             
             // Resolve target item instance URL dynamically
             const targetItemInstanceUrl = resolveTargetInstanceUrl(
               targetItem,
               network,
-              apiConfig.getUrl()
+              apiConfig.getUrl(),
+              'target'
             );
 
             await performAction(
