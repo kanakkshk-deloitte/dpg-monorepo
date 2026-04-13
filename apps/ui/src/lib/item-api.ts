@@ -98,32 +98,11 @@ export async function updateItem(itemId: string, payload: UpdateItemPayload): Pr
   return response.data;
 }
 
-export interface ItemRef {
-  item_network: string;
-  item_domain: string;
-  item_type: string;
-  item_id: string;
-}
-
-export interface PerformActionPayload {
-  action_name: string;
-  source_item: ItemRef;
-  target_item: ItemRef;
-  requirements_snapshot: Record<string, unknown>;
-  created_by: string;
-  response_event_type: string;
-  response_event_payload: Record<string, unknown>;
-}
-
-export interface PerformActionResponse {
-  action_id: string;
-  action_name: string;
-  status: string;
-  response_event_type: string;
-  response_event_payload: Record<string, unknown>;
-}
-
-export async function performAction(payload: PerformActionPayload): Promise<PerformActionResponse> {
-  const response = await apiClient.post<PerformActionResponse>('/api/v1/action/perform', payload);
-  return response.data;
-}
+// Re-export action-related types and functions from action-api.ts
+export {
+  type ItemRef,
+  type TargetItemRef,
+  type PerformActionPayload,
+  type PerformActionResponse,
+  performAction,
+} from './action-api';

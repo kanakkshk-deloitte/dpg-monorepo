@@ -5,6 +5,7 @@ import { HomePage } from './pages/home-page';
 import { ProfileFormPage } from './pages/profile-form-page';
 import { LoginPage } from './pages/auth/login-page';
 import { OtpPage } from './pages/auth/otp-page';
+import { MyActionsPage } from './pages/my-actions-page';
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
           <Route path="/profile/:id/edit" element={<ProfileFormPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/otp" element={<OtpPage />} />
+          <Route path="/my-actions" element={<MyActionsPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

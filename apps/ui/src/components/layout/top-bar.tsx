@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, List, Map, LogIn, Server } from 'lucide-react';
+import { Search, List, Map, LogIn, Server, Bell } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/user-menu';
 import { useAuth } from '@/contexts/auth-context';
 import { apiConfig } from '@/lib/api-config';
+import { usePendingActionsCount } from '@/hooks/use-actions';
 import type { ViewMode } from '@/engine/types';
 
 interface TopBarProps {
@@ -21,6 +22,28 @@ interface TopBarProps {
   onSearchChange: (value: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+}
+
+function NotificationBell() {
+  const navigate = useNavigate();
+  const { data: count = 0 } = usePendingActionsCount();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative"
+      onClick={() => navigate('/my-actions')}
+      aria-label={`${count} pending actions`}
+    >
+      <Bell className="h-4 w-4" />
+      {count > 0 && (
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+          {count > 9 ? '9+' : count}
+        </span>
+      )}
+    </Button>
+  );
 }
 
 export function TopBar({
@@ -82,7 +105,10 @@ export function TopBar({
 
         {!isLoading && (
           isAuthenticated ? (
-            <UserMenu />
+            <>
+              <NotificationBell />
+              <UserMenu />
+            </>
           ) : (
             <Button
               variant="outline"

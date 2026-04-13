@@ -16,7 +16,8 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { LayoutGrid, Box, Plus, Pencil, GraduationCap, UserCheck, Building2, Network, ChevronRight } from 'lucide-react';
+import { LayoutGrid, Box, Plus, Pencil, GraduationCap, UserCheck, Building2, Network, ChevronRight, Activity } from 'lucide-react';
+import { usePendingActionsCount } from '@/hooks/use-actions';
 import type { LucideIcon } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -53,6 +54,16 @@ function getDomainLabel(domainName: string): string {
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+}
+
+function PendingActionsBadge() {
+  const { data: count = 0 } = usePendingActionsCount();
+  if (count === 0) return null;
+  return (
+    <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
 }
 
 export function AppSidebar({
@@ -273,6 +284,21 @@ export function AppSidebar({
                 </SidebarMenu>
               </div>
             )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel>Actions</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => navigate('/my-actions')}>
+                  <Activity className="h-4 w-4" />
+                  <span>My Actions</span>
+                  <PendingActionsBadge />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
