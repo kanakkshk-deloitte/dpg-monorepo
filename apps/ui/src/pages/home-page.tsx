@@ -53,6 +53,46 @@ function getAllInteractions(network: DotNetworkSchema): Array<{ actionType: stri
   return interactions;
 }
 
+/**
+ * Resolve the instance URL for a target item
+ * Priority:
+ * 1. Item's own item_instance_url (if available and not localhost)
+ * 2. Network config instances lookup by domain
+ * 3. Current API base URL as fallback
+ */
+function resolveTargetInstanceUrl(
+  targetItem: Item,
+  network: DotNetworkSchema | null,
+  currentApiUrl: string
+): string {
+  // Priority 1: Use item's instance URL if it exists and is valid (not localhost in production)
+  if (targetItem.item_instance_url) {
+    // Check if it's a valid URL (not just http://localhost in production)
+    const isLocalhost = targetItem.item_instance_url.includes('localhost') || 
+                        targetItem.item_instance_url.includes('127.0.0.1');
+    const isProduction = !currentApiUrl.includes('localhost') && 
+                         !currentApiUrl.includes('127.0.0.1');
+    
+    if (!isLocalhost || !isProduction) {
+      return targetItem.item_instance_url;
+    }
+    // If localhost in production, continue to fallback
+  }
+
+  // Priority 2: Lookup in network.instances by domain
+  if (network?.instances) {
+    const instanceConfig = network.instances.find(
+      (i) => i.domain_name === targetItem.item_domain
+    );
+    if (instanceConfig?.instance_url) {
+      return instanceConfig.instance_url;
+    }
+  }
+
+  // Priority 3: Fallback to current API URL
+  return currentApiUrl;
+}
+
 export function HomePage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -414,11 +454,11 @@ export function HomePage() {
             }
 
             // Resolve target item instance URL dynamically
-            const targetItemInstanceUrl =
-              targetItem.item_instance_url ??
-              network?.instances?.find((i) => i.domain_name === targetItem.item_domain)
-                ?.instance_url ??
-              apiConfig.getUrl();
+            const targetItemInstanceUrl = resolveTargetInstanceUrl(
+              targetItem,
+              network,
+              apiConfig.getUrl()
+            );
 
             await performAction({
               action_name: actionType,
