@@ -1,0 +1,205 @@
+import { and, eq } from 'drizzle-orm';
+import type { FastifyBaseLogger } from 'fastify';
+import z, {
+  PerformActionBodySchema,
+  PerformNetworkActionBodySchema,
+  StoreEventBodySchema,
+} from '@dpg/schemas';
+import { action_events, items } from '@dpg/database';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { getCurrentApiBaseUrl } from '../config';
+
+type ActionItemRef = z.infer<typeof PerformNetworkActionBodySchema>['source_item'];
+type PerformActionTargetItemRef = z.infer<
+  typeof PerformActionBodySchema
+>['target_item'];
+export type StoredActionEvent = z.infer<typeof StoreEventBodySchema>;
+
+function normalizeInstanceUrl(url: string) {
+  const parsedUrl = new URL(url);
+
+  if (
+    parsedUrl.hostname === 'localhost' ||
+    parsedUrl.hostname === '127.0.0.1' ||
+    parsedUrl.hostname === '::1'
+  ) {
+    parsedUrl.hostname = 'localhost';
+  }
+
+  if (
+    (parsedUrl.protocol === 'http:' && parsedUrl.port === '80') ||
+    (parsedUrl.protocol === 'https:' && parsedUrl.port === '443')
+  ) {
+    parsedUrl.port = '';
+  }
+
+  return parsedUrl.toString().replace(/\/$/, '');
+}
+
+export async function fetchLocalItemSnapshot(
+  db: NodePgDatabase<any>,
+  item: ActionItemRef
+) {
+  const baseConditions = and(
+    eq(items.item_network, item.item_network),
+    eq(items.item_domain, item.item_domain),
+    eq(items.item_type, item.item_type),
+    eq(items.item_id, item.item_id)
+  );
+
+  const [exactResult] = await db
+    .select({
+      item_id: items.item_id,
+      item_instance_url: items.item_instance_url,
+      created_by: items.created_by,
+      item_latitude: items.item_latitude,
+      item_longitude: items.item_longitude,
+    })
+    .from(items)
+    .where(and(baseConditions, eq(items.item_instance_url, item.item_instance_url)))
+    .limit(1);
+
+  if (exactResult) {
+    return exactResult;
+  }
+
+  const normalizedItemInstanceUrl = normalizeInstanceUrl(item.item_instance_url);
+  const normalizedCurrentInstanceUrl = normalizeInstanceUrl(getCurrentApiBaseUrl());
+  if (normalizedItemInstanceUrl !== normalizedCurrentInstanceUrl) {
+    return null;
+  }
+
+  const [localAliasResult] = await db
+    .select({
+      item_id: items.item_id,
+      item_instance_url: items.item_instance_url,
+      created_by: items.created_by,
+      item_latitude: items.item_latitude,
+      item_longitude: items.item_longitude,
+    })
+    .from(items)
+    .where(baseConditions)
+    .limit(1);
+
+  if (
+    localAliasResult &&
+    normalizeInstanceUrl(localAliasResult.item_instance_url) ===
+      normalizedCurrentInstanceUrl
+  ) {
+    return localAliasResult;
+  }
+
+  return null;
+}
+
+export async function insertActionEvent(
+  db: NodePgDatabase<any>,
+  event: StoredActionEvent
+) {
+  const [created] = await db
+    .insert(action_events)
+    .values({
+      action_name: event.action_name,
+      origin_instance_domain: event.origin_instance_domain,
+      action_id: event.action_id,
+      action_status: event.action_status,
+      update_count: event.update_count,
+      source_item_network: event.source_item.item_network,
+      source_item_domain: event.source_item.item_domain,
+      source_item_type: event.source_item.item_type,
+      source_item_id: event.source_item.item_id,
+      source_item_instance_url: event.source_item.item_instance_url,
+      source_item_owner: event.source_item_owner,
+      source_item_latitude: event.source_item_latitude ?? null,
+      source_item_longitude: event.source_item_longitude ?? null,
+      target_item_network: event.target_item.item_network,
+      target_item_domain: event.target_item.item_domain,
+      target_item_type: event.target_item.item_type,
+      target_item_id: event.target_item.item_id,
+      target_item_instance_url: event.target_item.item_instance_url,
+      target_item_owner: event.target_item_owner,
+      target_item_latitude: event.target_item_latitude ?? null,
+      target_item_longitude: event.target_item_longitude ?? null,
+      event_payload: event.event_payload,
+      remarks: event.remarks ?? null,
+    })
+    .onConflictDoNothing({
+      target: [
+        action_events.action_name,
+        action_events.origin_instance_domain,
+        action_events.action_id,
+        action_events.update_count,
+      ],
+    })
+    .returning({
+      event_id: action_events.event_id,
+      action_id: action_events.action_id,
+      action_name: action_events.action_name,
+      action_status: action_events.action_status,
+      update_count: action_events.update_count,
+    });
+
+  return created ?? null;
+}
+
+export function isCurrentInstanceItem(item: ActionItemRef) {
+  return (
+    normalizeInstanceUrl(item.item_instance_url) ===
+    normalizeInstanceUrl(getCurrentApiBaseUrl())
+  );
+}
+
+export function buildNetworkActionTargetItem(
+  item: PerformActionTargetItemRef
+): ActionItemRef {
+  return {
+    item_network: item.item_network,
+    item_domain: item.item_domain,
+    item_type: item.item_type,
+    item_id: item.item_id,
+    item_instance_url: item.item_instance_url,
+  };
+}
+
+export async function mirrorActionEventToSourceInstance(
+  event: StoredActionEvent,
+  log: FastifyBaseLogger
+) {
+  if (event.source_item.item_instance_url === getCurrentApiBaseUrl()) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      new URL('/api/v1/event/store', event.source_item.item_instance_url),
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      }
+    );
+
+    if (!response.ok) {
+      log.error(
+        {
+          action_id: event.action_id,
+          source_instance_url: event.source_item.item_instance_url,
+          status_code: response.status,
+          status_text: response.statusText,
+        },
+        'Failed to mirror action event to source instance'
+      );
+    }
+  } catch (err) {
+    log.error(
+      {
+        err,
+        action_id: event.action_id,
+        source_instance_url: event.source_item.item_instance_url,
+      },
+      'Failed to mirror action event to source instance'
+    );
+  }
+}

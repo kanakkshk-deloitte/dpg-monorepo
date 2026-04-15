@@ -35,8 +35,7 @@ export function createAuth(config: AuthRuntimeConfig) {
       useSecureCookies: config.nodeEnv === 'production',
 
       crossSubDomainCookies: {
-        enabled: config.nodeEnv === 'production',
-        domain: config.apiDomain,
+        enabled: false,
       },
 
       defaultCookieAttributes: {
