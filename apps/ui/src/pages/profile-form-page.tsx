@@ -24,7 +24,7 @@ import {
   type UpdateItemPayload,
   type Item,
 } from '@/lib/item-api';
-import { fetchNetworkConfig } from '@/lib/network-api';
+import { fetchNetworkConfig, fetchNetworkConfigs } from '@/lib/network-api';
 import { extractAndGeocode } from '@/lib/item-utils';
 import { apiConfig } from '@/lib/api-config';
 
@@ -52,17 +52,50 @@ export function ProfileFormPage() {
   const [initialData, setInitialData] = React.useState<Record<string, unknown> | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(isEdit);
+  const [availableNetworkNames, setAvailableNetworkNames] = React.useState<string[] | null>(null);
 
   // Get network from URL query param, fallback to env config
-  const configuredNetworkNames = parseNetworkNames(import.meta.env.VITE_NETWORK_NAME);
+  const configuredNetworkNames = React.useMemo(
+    () => parseNetworkNames(import.meta.env.VITE_NETWORK_NAME),
+    []
+  );
   const networkFromUrl = searchParams.get('network');
-  const targetNetworkName = networkFromUrl && configuredNetworkNames.includes(networkFromUrl)
-    ? networkFromUrl
-    : (configuredNetworkNames[0] || 'yellow_dot');
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+
+    fetchNetworkConfigs()
+      .then((networks) => {
+        if (controller.signal.aborted) return;
+        const filteredNetworks = configuredNetworkNames.length > 0
+          ? networks.filter((network) => configuredNetworkNames.includes(network.name))
+          : networks;
+        setAvailableNetworkNames(filteredNetworks.map((network) => network.name));
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch networks:', err);
+        setAvailableNetworkNames([]);
+        setIsLoading(false);
+      });
+
+    return () => { controller.abort(); };
+  }, [configuredNetworkNames]);
+
+  const targetNetworkName = React.useMemo(() => {
+    if (availableNetworkNames === null) return null;
+    if (networkFromUrl && availableNetworkNames.includes(networkFromUrl)) {
+      return networkFromUrl;
+    }
+    return availableNetworkNames[0] ?? null;
+  }, [availableNetworkNames, networkFromUrl]);
 
   // Fetch and resolve network config from API
   React.useEffect(() => {
+    if (!targetNetworkName) return;
+
     const controller = new AbortController();
+    setResolvedNetwork(null);
 
     fetchNetworkConfig(targetNetworkName)
       .then((config) => {
@@ -75,6 +108,7 @@ export function ProfileFormPage() {
       })
       .catch((err) => {
         console.error('Failed to fetch network config:', err);
+        setIsLoading(false);
       });
 
     return () => { controller.abort(); };
@@ -88,6 +122,7 @@ export function ProfileFormPage() {
 
     const loadExistingProfile = async () => {
       try {
+        let foundItem = false;
         // Search across all domains to find the item
         for (const domain of resolvedNetwork.domains ?? []) {
           const itemTypeKeys = domain.item_schemas ? Object.keys(domain.item_schemas) : [];
@@ -107,8 +142,14 @@ export function ProfileFormPage() {
             setExistingItem(item);
             setSelectedDomain(item.item_domain);
             setInitialData(item.item_state);
+            foundItem = true;
             break;
           }
+        }
+
+        if (!cancelled && !foundItem) {
+          toast.error('Profile not found on selected network');
+          navigate(`/?network=${resolvedNetwork.name}`);
         }
       } catch (err) {
         if (!cancelled) {
@@ -225,12 +266,28 @@ export function ProfileFormPage() {
     }
   };
 
-  if (!network || isLoading) {
+  if (availableNetworkNames === null || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-muted-foreground">
           {isLoading ? 'Loading profile...' : 'Loading network schemas...'}
         </p>
+      </div>
+    );
+  }
+
+  if (!targetNetworkName) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">No networks available.</p>
+      </div>
+    );
+  }
+
+  if (!network) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading network schemas...</p>
       </div>
     );
   }
