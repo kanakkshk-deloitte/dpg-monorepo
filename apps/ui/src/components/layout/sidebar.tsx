@@ -261,7 +261,7 @@ export function AppSidebar({
                                     )}
                                   </SidebarMenuButton>
                                   <SidebarMenuAction
-                                    onClick={() => navigate(`/profile/${profile.item_id}/edit`)}
+                                    onClick={() => navigate(`/profile/${profile.item_id}/edit?network=${encodeURIComponent(profile.item_network)}`)}
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </SidebarMenuAction>
