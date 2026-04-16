@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,12 @@ import { toast } from 'sonner';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [name, setName] = useState('');
   const [userExists, setUserExists] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const redirectTo = searchParams.get('redirect') ?? '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ export function LoginPage() {
       if (exists) {
         await requestOtp(phoneNumber);
         navigate('/auth/otp', {
-          state: { phoneNumber, userExists: exists, name: '' },
+          state: { phoneNumber, userExists: exists, name: '', redirectTo },
         });
       } else {
         if (!name.trim()) {
@@ -37,7 +39,7 @@ export function LoginPage() {
         }
         await requestOtp(phoneNumber);
         navigate('/auth/otp', {
-          state: { phoneNumber, userExists: exists, name },
+          state: { phoneNumber, userExists: exists, name, redirectTo },
         });
       }
     } catch {

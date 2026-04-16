@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, GraduationCap, UserCheck, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -41,6 +41,7 @@ const domainIcons: Record<string, LucideIcon> = {
 };
 
 export function ProfileFormPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -252,6 +253,12 @@ export function ProfileFormPage() {
         toast.error('Domain not served by this API instance', {
           description: error.message,
         });
+      } else if (status === 401) {
+        const redirectTo = `${location.pathname}${location.search}`;
+        toast.error('Please sign in to continue', {
+          description: 'Your session has expired or you are not signed in.',
+        });
+        navigate(`/auth/login?redirect=${encodeURIComponent(redirectTo)}`);
       } else if (status === 409) {
         toast.error('Profile already exists', {
           description: 'A profile with this combination already exists',

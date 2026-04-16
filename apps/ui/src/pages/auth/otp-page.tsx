@@ -12,6 +12,7 @@ interface AuthState {
   phoneNumber: string;
   userExists: boolean;
   name?: string;
+  redirectTo?: string;
 }
 
 export function OtpPage() {
@@ -55,7 +56,7 @@ export function OtpPage() {
     try {
       await verifyOtp(state.phoneNumber, otp, state.userExists ? undefined : state.name);
       toast.success(state.userExists ? 'Welcome back!' : 'Account created successfully!');
-      navigate('/');
+      navigate(state.redirectTo ?? '/', { replace: true });
     } catch {
       toast.error('Invalid OTP. Please try again.');
     } finally {
