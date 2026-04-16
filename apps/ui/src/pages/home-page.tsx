@@ -43,6 +43,22 @@ function parseNetworkNames(networkEnv: string | undefined): string[] {
   return networkEnv.split(',').map(n => n.trim()).filter(Boolean);
 }
 
+function getActiveProfileStorageKey(networkName: string): string {
+  return `activeProfileId:${networkName}`;
+}
+
+function getStoredActiveProfileId(networkName: string): string | null {
+  return localStorage.getItem(getActiveProfileStorageKey(networkName));
+}
+
+function setStoredActiveProfileId(networkName: string, profileId: string): void {
+  localStorage.setItem(getActiveProfileStorageKey(networkName), profileId);
+}
+
+function clearStoredActiveProfileId(networkName: string): void {
+  localStorage.removeItem(getActiveProfileStorageKey(networkName));
+}
+
 function getAllInteractions(network: DotNetworkSchema): Array<{ actionType: string; interaction: DotNetworkInteraction }> {
   const interactions: Array<{ actionType: string; interaction: DotNetworkInteraction }> = [];
   for (const [actionType, action] of Object.entries(network.actions)) {
@@ -129,10 +145,16 @@ export function HomePage() {
   const [selectedNetworkName, setSelectedNetworkName] = React.useState<string | null>(initialNetworkName);
   const [domainItems, setDomainItems] = React.useState<Record<string, Item[]>>({});
   const [myItems, setMyItems] = React.useState<Item[]>([]);
-  const [activeProfileId, setActiveProfileId] = React.useState<string | null>(
-    () => localStorage.getItem('activeProfileId')
-  );
+  const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!selectedNetworkName) {
+      setActiveProfileId(null);
+      return;
+    }
+    setActiveProfileId(getStoredActiveProfileId(selectedNetworkName));
+  }, [selectedNetworkName]);
 
   // Fetch networks from API on mount
   React.useEffect(() => {
@@ -167,6 +189,10 @@ export function HomePage() {
 
     const controller = new AbortController();
 
+    setResolvedNetwork(null);
+    setDomainItems({});
+    setMyItems([]);
+
     fetchNetworkConfig(selectedNetworkName)
       .then((config) => {
         if (controller.signal.aborted) return;
@@ -189,7 +215,6 @@ export function HomePage() {
   // Fetch all user profiles across all domains to discover their domain
   React.useEffect(() => {
     if (!network || !user) return;
-    if (myItems.length > 0) return; // Already fetched
 
     const controller = new AbortController();
 
@@ -212,16 +237,16 @@ export function HomePage() {
       setMyItems(allProfiles);
 
       // Auto-select: use stored ID if valid, otherwise first profile
-      const storedId = localStorage.getItem('activeProfileId');
+      const storedId = getStoredActiveProfileId(network.name);
       if (storedId && allProfiles.some((p) => p.item_id === storedId)) {
-        // stored ID still valid, keep it
+        setActiveProfileId(storedId);
       } else if (allProfiles.length > 0) {
         setActiveProfileId(allProfiles[0].item_id);
-        localStorage.setItem('activeProfileId', allProfiles[0].item_id);
+        setStoredActiveProfileId(network.name, allProfiles[0].item_id);
       } else {
         // No profiles for this user — clear any stale ID from a previous session
         setActiveProfileId(null);
-        localStorage.removeItem('activeProfileId');
+        clearStoredActiveProfileId(network.name);
       }
     });
 
@@ -251,6 +276,18 @@ export function HomePage() {
     );
     return network.domains.filter((d) => targetNames.has(d.name));
   }, [network, currentDomain, myItem]);
+
+  React.useEffect(() => {
+    if (!network) return;
+    if (selectedDomain === null) return;
+    if (!visibleDomains.some((d) => d.name === selectedDomain)) {
+      setSelectedDomain(null);
+      setSearchParams((prev) => {
+        prev.delete('domain');
+        return prev;
+      });
+    }
+  }, [network, selectedDomain, visibleDomains, setSearchParams]);
 
   const localProfileItemIds = React.useMemo(
     () => new Set(myItems.filter((item) => item.item_domain === currentDomain).map((item) => item.item_id)),
@@ -396,7 +433,9 @@ export function HomePage() {
 
   const handleActiveProfileChange = (profileId: string) => {
     setActiveProfileId(profileId);
-    localStorage.setItem('activeProfileId', profileId);
+    if (network?.name) {
+      setStoredActiveProfileId(network.name, profileId);
+    }
   };
 
   const handleNetworkSelect = (networkName: string) => {
