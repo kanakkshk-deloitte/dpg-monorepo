@@ -4,15 +4,18 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OtpInput } from '@/components/auth/otp-input';
-import { requestOtp } from '@/lib/auth-api';
+import { requestOtp, type AuthIdentifier } from '@/lib/auth-api';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 
-interface AuthState {
-  phoneNumber: string;
+interface AuthState extends AuthIdentifier {
   userExists: boolean;
   name?: string;
   redirectTo?: string;
+}
+
+function getAuthIdentifier(state: AuthState): AuthIdentifier {
+  return state.email ? { email: state.email } : { phoneNumber: state.phoneNumber };
 }
 
 export function OtpPage() {
@@ -23,9 +26,10 @@ export function OtpPage() {
   const [countdown, setCountdown] = useState(60);
 
   const state = location.state as AuthState | null;
+  const identifierLabel = state?.email ?? state?.phoneNumber;
 
   useEffect(() => {
-    if (!state?.phoneNumber) {
+    if (!identifierLabel) {
       navigate('/auth/login');
       return;
     }
@@ -47,14 +51,14 @@ export function OtpPage() {
       };
     }
     return () => clearTimeout(timer);
-  }, [countdown, state, navigate]);
+  }, [countdown, identifierLabel, navigate]);
 
   const handleOtpComplete = async (otp: string) => {
-    if (!state?.phoneNumber) return;
+    if (!state || !identifierLabel) return;
 
     setIsLoading(true);
     try {
-      await verifyOtp(state.phoneNumber, otp, state.userExists ? undefined : state.name);
+      await verifyOtp(getAuthIdentifier(state), otp, state.userExists ? undefined : state.name);
       toast.success(state.userExists ? 'Welcome back!' : 'Account created successfully!');
       navigate(state.redirectTo ?? '/', { replace: true });
     } catch {
@@ -65,11 +69,11 @@ export function OtpPage() {
   };
 
   const handleResendOtp = async () => {
-    if (!state?.phoneNumber || countdown > 0) return;
+    if (!state || !identifierLabel || countdown > 0) return;
 
     setIsLoading(true);
     try {
-      await requestOtp(state.phoneNumber);
+      await requestOtp(getAuthIdentifier(state));
       setCountdown(60);
       toast.success('OTP resent successfully');
     } catch {
@@ -79,7 +83,7 @@ export function OtpPage() {
     }
   };
 
-  if (!state?.phoneNumber) {
+  if (!identifierLabel) {
     return null;
   }
 
@@ -98,7 +102,7 @@ export function OtpPage() {
           </Button>
           <CardTitle className="text-2xl">Enter verification code</CardTitle>
           <CardDescription>
-            We sent a code to {state.phoneNumber}
+            We sent a code to {identifierLabel}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

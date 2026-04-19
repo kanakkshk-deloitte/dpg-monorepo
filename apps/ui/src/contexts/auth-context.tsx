@@ -1,14 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { getSession, signOut as apiSignOut, type User } from '@/lib/auth-api';
+import { getSession, signOut as apiSignOut, type AuthIdentifier, type User } from '@/lib/auth-api';
 import { setAuthToken, clearAuthToken } from '@/lib/auth-token';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  checkUser: (phoneNumber: string) => Promise<boolean>;
-  requestOtp: (phoneNumber: string) => Promise<void>;
-  verifyOtp: (phoneNumber: string, otp: string, name?: string) => Promise<void>;
+  checkUser: (identifier: AuthIdentifier) => Promise<boolean>;
+  requestOtp: (identifier: AuthIdentifier) => Promise<void>;
+  verifyOtp: (identifier: AuthIdentifier, otp: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -36,20 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchSession();
   }, [fetchSession]);
 
-  const checkUser = useCallback(async (phoneNumber: string): Promise<boolean> => {
+  const checkUser = useCallback(async (identifier: AuthIdentifier): Promise<boolean> => {
     const { checkUser: checkUserApi } = await import('@/lib/auth-api');
-    const response = await checkUserApi(phoneNumber);
+    const response = await checkUserApi(identifier);
     return response.userExists;
   }, []);
 
-  const requestOtp = useCallback(async (phoneNumber: string): Promise<void> => {
+  const requestOtp = useCallback(async (identifier: AuthIdentifier): Promise<void> => {
     const { requestOtp: requestOtpApi } = await import('@/lib/auth-api');
-    await requestOtpApi(phoneNumber);
+    await requestOtpApi(identifier);
   }, []);
 
-  const verifyOtp = useCallback(async (phoneNumber: string, otp: string, name?: string): Promise<void> => {
+  const verifyOtp = useCallback(async (identifier: AuthIdentifier, otp: string, name?: string): Promise<void> => {
     const { verifyOtp: verifyOtpApi } = await import('@/lib/auth-api');
-    const response = await verifyOtpApi(phoneNumber, otp, name);
+    const response = await verifyOtpApi(identifier, otp, name);
     setAuthToken(response.token);
     setUser(response.user);
   }, []);
