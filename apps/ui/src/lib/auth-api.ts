@@ -2,6 +2,11 @@ import { createApiClient } from './api-client';
 
 const apiClient = createApiClient();
 
+export interface AuthIdentifier {
+  email?: string;
+  phoneNumber?: string;
+}
+
 export interface CheckUserResponse {
   userExists: boolean;
 }
@@ -49,23 +54,37 @@ function normalizePhoneNumber(phoneNumber: string): string {
   return `+${digits}`;
 }
 
-export async function checkUser(phoneNumber: string): Promise<CheckUserResponse> {
+function normalizeIdentifier(identifier: AuthIdentifier): AuthIdentifier {
+  const email = identifier.email?.trim().toLowerCase();
+  const phoneNumber = identifier.phoneNumber?.trim();
+
+  return {
+    ...(email ? { email } : {}),
+    ...(phoneNumber ? { phoneNumber: normalizePhoneNumber(phoneNumber) } : {}),
+  };
+}
+
+export async function checkUser(identifier: AuthIdentifier): Promise<CheckUserResponse> {
   const response = await apiClient.post<CheckUserResponse>('/api/auth/unified-otp/check-user', {
-    phoneNumber: normalizePhoneNumber(phoneNumber),
+    ...normalizeIdentifier(identifier),
   });
   return response.data;
 }
 
-export async function requestOtp(phoneNumber: string): Promise<RequestOtpResponse> {
+export async function requestOtp(identifier: AuthIdentifier): Promise<RequestOtpResponse> {
   const response = await apiClient.post<RequestOtpResponse>('/api/auth/unified-otp/request', {
-    phoneNumber: normalizePhoneNumber(phoneNumber),
+    ...normalizeIdentifier(identifier),
   });
   return response.data;
 }
 
-export async function verifyOtp(phoneNumber: string, otp: string, name?: string): Promise<VerifyOtpResponse> {
+export async function verifyOtp(
+  identifier: AuthIdentifier,
+  otp: string,
+  name?: string
+): Promise<VerifyOtpResponse> {
   const response = await apiClient.post<VerifyOtpResponse>('/api/auth/unified-otp/verify', {
-    phoneNumber: normalizePhoneNumber(phoneNumber),
+    ...normalizeIdentifier(identifier),
     otp,
     name: name || 'user',
   });
