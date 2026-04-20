@@ -17,14 +17,19 @@ interface MapViewProps {
 const LOCATION_FIELDS = {
   exact: ['item_latitude', 'item_longitude', 'lat', 'latitude', 'lng', 'lon', 'longitude'],
   postal: ['pincode', 'postal_code', 'zip', 'zipcode'],
-  full: ['address', 'street_address', 'street', 'full_address', 'house_number', 'building'],
-  city: ['city', 'town', 'district', 'locality', 'village', 'place'],
+  full: ['location', 'address', 'street_address', 'street', 'full_address', 'house_number', 'building'],
+  city: ['city', 'preferred_city', 'town', 'district', 'locality', 'village', 'place'],
   region: ['state', 'province', 'region', 'county'],
   country: ['country', 'nation'],
 };
 
 // Build address string from available fields
 function buildAddressString(data: Record<string, unknown>): { address: string; source: string } | null {
+  const location = findFirstValue(data, ['location']);
+  if (location) {
+    return { address: location, source: 'location' };
+  }
+
   const parts: string[] = [];
   const sources: string[] = [];
 
