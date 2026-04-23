@@ -1,0 +1,259 @@
+import * as React from 'react';
+import { Copy, ExternalLink, FileText, Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { registerWalletProvider } from '@/engine/wallet/wallet-registry';
+import type { WalletImportProviderProps, WalletProvider } from '@/engine/wallet/types';
+import { digiLockerApi, isDigiLockerConfigured } from '@/lib/digilocker-api';
+
+function extractCode(value: string): string {
+  const trimmed = value.trim();
+  try {
+    const parsed = new URL(trimmed);
+    const code = parsed.searchParams.get('code');
+    if (code) return code;
+  } catch {
+    // Ignore invalid URL and treat the value as a raw code.
+  }
+  return trimmed;
+}
+
+function isRedirectMessage(data: unknown): data is { type: string; code?: string; finalUrl?: string } {
+  return typeof data === 'object' && data !== null && 'type' in data;
+}
+
+function detectCodeFromMessage(data: unknown): string | null {
+  if (isRedirectMessage(data)) {
+    if (data.type === 'DIGILOCKER_REDIRECT' && typeof data.code === 'string') {
+      return data.code;
+    }
+    if (typeof data.finalUrl === 'string') {
+      return extractCode(data.finalUrl);
+    }
+  }
+
+  if (typeof data === 'string' && data.includes('wallet-redirect?code=')) {
+    return extractCode(data);
+  }
+
+  try {
+    const serialized = JSON.stringify(data);
+    const match = serialized.match(/wallet-redirect\?[^"\s]*code=([^&"\s]+)/);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function DigiLockerProvider({ onSuccess, onCancel }: WalletImportProviderProps) {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [authCode, setAuthCode] = React.useState('');
+  const [launchUrl, setLaunchUrl] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isMonitoring, setIsMonitoring] = React.useState(false);
+  const popupRef = React.useRef<Window | null>(null);
+  const pollIntervalRef = React.useRef<number | null>(null);
+  const timeoutRef = React.useRef<number | null>(null);
+
+  const cleanupPopup = React.useCallback((closeWindow: boolean) => {
+    if (pollIntervalRef.current) {
+      window.clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (closeWindow && popupRef.current && !popupRef.current.closed) {
+      popupRef.current.close();
+    }
+    popupRef.current = null;
+    setIsMonitoring(false);
+  }, []);
+
+  const completeImport = React.useCallback(
+    async (input: string) => {
+      if (!digiLockerApi) return;
+      const code = extractCode(input);
+      if (!code) return;
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await digiLockerApi.completeAuth(code);
+        const transformed = digiLockerApi.transformCredentialSubject(response.data.credentialSubject);
+        onSuccess({
+          data: transformed.data,
+          candidates: transformed.candidates,
+          rawPayload: transformed.rawPayload,
+          providerName: 'digilocker',
+          providerLabel: 'DigiLocker',
+          metadata: { provider: 'digilocker' },
+          summary: 'Imported verified details from DigiLocker',
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to complete DigiLocker import');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [onSuccess]
+  );
+
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const detectedCode = detectCodeFromMessage(event.data);
+      if (!detectedCode) return;
+      setAuthCode(detectedCode);
+      cleanupPopup(true);
+      void completeImport(detectedCode);
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      cleanupPopup(true);
+    };
+  }, [cleanupPopup, completeImport]);
+
+  const startFlow = async () => {
+    if (!digiLockerApi) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await digiLockerApi.initiateRequest();
+      setLaunchUrl(response.url);
+      if (popupRef.current && !popupRef.current.closed) {
+        popupRef.current.close();
+      }
+      popupRef.current = window.open(
+        response.url,
+        'digilocker-auth',
+        'width=900,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=yes'
+      );
+      if (!popupRef.current) {
+        setError('Popup blocked. Please allow popups for this site and try again.');
+        return;
+      }
+      setIsMonitoring(true);
+
+      pollIntervalRef.current = window.setInterval(() => {
+        if (!popupRef.current || popupRef.current.closed) {
+          cleanupPopup(false);
+          return;
+        }
+
+        try {
+          const popupUrl = popupRef.current.location.href;
+          if (popupUrl.includes('wallet-redirect?code=')) {
+            const detectedCode = extractCode(popupUrl);
+            if (detectedCode) {
+              setAuthCode(detectedCode);
+              cleanupPopup(true);
+              void completeImport(detectedCode);
+            }
+          }
+        } catch {
+          // Cross-origin access is expected until the popup reaches the redirect page.
+        }
+      }, 1000);
+
+      timeoutRef.current = window.setTimeout(() => {
+        cleanupPopup(true);
+        setError('DigiLocker authentication timed out. Please try again.');
+      }, 600000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start DigiLocker import');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-muted/30 p-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-2 text-primary">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-medium">DigiLocker</p>
+            <p className="text-sm text-muted-foreground">
+              Start the DigiLocker flow in a popup. If the bridge page is configured, the import completes automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Button variant="outline" onClick={startFlow} disabled={isLoading}>
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+          Open DigiLocker
+        </Button>
+        {launchUrl ? (
+          <p className="text-xs text-muted-foreground">
+            {isMonitoring
+              ? 'Waiting for DigiLocker to finish. If automatic detection does not work, you can paste the redirect URL or code below.'
+              : 'If automatic detection does not work, paste the redirect URL or the code below.'}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Authorization code or redirect URL</p>
+        <Input
+          value={authCode}
+          onChange={(event) => setAuthCode(event.target.value)}
+          placeholder="Paste the code or redirect URL here"
+        />
+      </div>
+
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {launchUrl ? (
+        <div className="rounded-md border p-3 text-xs text-muted-foreground">
+          <p>
+            Host a redirect bridge page like `public/digilocker-bridge.html` on the callback origin used by DigiLocker for automatic popup callbacks.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(launchUrl);
+              } catch {
+                setError('Could not copy the DigiLocker URL to the clipboard.');
+              }
+            }}
+          >
+            <Copy className="h-4 w-4" />
+            Copy launch URL
+          </Button>
+        </div>
+      ) : null}
+
+      <div className="flex justify-between gap-2">
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button onClick={() => void completeImport(authCode)} disabled={!authCode.trim() || isLoading}>
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Import from DigiLocker
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const provider: WalletProvider = {
+  name: 'digilocker',
+  label: 'DigiLocker',
+  description: 'Import verified identity details from DigiLocker.',
+  component: DigiLockerProvider,
+  isConfigured: isDigiLockerConfigured,
+  getConfigurationHint: () => 'Missing VITE_AGENT_URL or VITE_AGENT_TOKEN.',
+};
+
+registerWalletProvider(provider);
