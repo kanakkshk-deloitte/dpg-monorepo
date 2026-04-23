@@ -4,8 +4,6 @@ description: How to add a new shared package to the monorepo and consume it from
 head: []
 ---
 
-# Adding Packages
-
 ## 1. Create the package
 
 Create a new folder under `packages/<name>`.

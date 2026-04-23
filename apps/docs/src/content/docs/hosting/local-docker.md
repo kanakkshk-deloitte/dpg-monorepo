@@ -4,8 +4,6 @@ description: How to run DPG locally with Docker-backed PostgreSQL and Redis.
 head: []
 ---
 
-# Local And Docker
-
 This is the recommended development setup.
 
 ## Why This Mode
@@ -50,6 +48,24 @@ REDIS_PORT="5555"
 ```bash
 pnpm dev:api
 ```
+
+## Build And Run The API Image
+
+The API also ships with a production Dockerfile at `apps/api/Dockerfile`.
+
+Build the image from the repository root:
+
+```bash
+docker build -f apps/api/Dockerfile -t dpg-api .
+```
+
+Run it with the local environment:
+
+```bash
+docker run --env-file .env -p 2742:2742 dpg-api
+```
+
+When running the API as a container, `127.0.0.1` inside the container is not your host machine. Point `POSTGRES_URL` and `REDIS_URL` at reachable hosts, or run the API container on the same Docker network as the `db` and `redis` services.
 
 ## Useful Checks
 

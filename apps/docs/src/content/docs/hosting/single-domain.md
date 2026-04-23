@@ -4,8 +4,6 @@ description: How to run one DPG backend for a single network/domain binding.
 head: []
 ---
 
-# Hosting A Single Instance
-
 One API instance serves one binding such as:
 
 ```bash
@@ -30,6 +28,16 @@ NETWORK_CONFIG_URLS="yellow_dot=https://registry.example.com/yellow-dot/network.
 - one backend deployment
 - one network/domain identity
 - network config can derive allowed instance origins for CORS
+
+## Deployment Method
+
+For Dokploy or any container platform, build the API with:
+
+```bash
+docker build -f apps/api/Dockerfile -t dpg-api .
+```
+
+The container starts `node apps/api/dist/server.js` and listens on `API_PORT`.
 
 ## Local Development Equivalent
 

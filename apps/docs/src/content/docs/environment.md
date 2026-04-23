@@ -4,8 +4,6 @@ description: Complete environment reference for local development and production
 head: []
 ---
 
-# Environment
-
 The root `.env.example` is the source template for local and production configuration.
 
 ## Minimal Local Example
@@ -16,10 +14,13 @@ INSTANCE_ENV="development"
 API_DOMAIN="http://localhost"
 API_PORT="2742"
 AUTH_SECRET="replace-this"
+AUTH_MIDDLEWARE_ENABLED="true"
+CREATE_TEST_OTP="false"
 ALLOWED_ORIGINS="http://localhost:3000"
 SERVED_DOMAINS="yellow_dot/student"
 NETWORK_CONFIG_SOURCE="local"
 NETWORK_CONFIG_LOCAL_FILE="examples/schemas/yellow_dot/network.json"
+SCHEMA_REGISTRY_URL="yellow_dot=https://registry.example.com/schemas/yellow_dot/network.json"
 POSTGRES_USER="postgres"
 POSTGRES_PASSWORD="replace-this"
 POSTGRES_DB="postgresdb"
@@ -27,7 +28,7 @@ POSTGRES_HOST="127.0.0.1"
 DATABASE_PORT="5432"
 REDIS_HOST="127.0.0.1"
 REDIS_PASSWORD="replace-this"
-REDIS_PORT="5555"
+REDIS_PORT="6370"
 ```
 
 ## Core Instance Variables
@@ -37,6 +38,8 @@ REDIS_PORT="5555"
 - `API_DOMAIN`
 - `API_PORT`
 - `AUTH_SECRET`
+- `AUTH_MIDDLEWARE_ENABLED`
+- `CREATE_TEST_OTP`
 - `ALLOWED_ORIGINS`
 - `SERVED_DOMAINS`
 - `NETWORK_CONFIG_SOURCE`
@@ -58,9 +61,13 @@ REDIS_PORT="5555"
 - `REDIS_PORT`
 - `REDIS_URL`
 
-If `POSTGRES_URL` is present, the individual PostgreSQL fields are fallbacks.
+If `POSTGRES_URL` is present, the individual PostgreSQL fields are fallbacks. If both `POSTGRES_PORT` and `DATABASE_PORT` are present, `POSTGRES_PORT` wins.
 
 If `REDIS_URL` is present, the individual Redis fields are fallbacks.
+
+In development, `AUTH_MIDDLEWARE_ENABLED=false` can disable route auth for local debugging. In production, auth middleware is always enabled by the API runtime.
+
+`CREATE_TEST_OTP=true` enables local test OTP behavior for the unified OTP flow.
 
 ## Notification Variables
 

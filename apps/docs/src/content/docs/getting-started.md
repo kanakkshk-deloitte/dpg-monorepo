@@ -4,13 +4,11 @@ description: End-to-end local setup for running DPG, understanding examples, and
 head: []
 ---
 
-# Getting Started
-
 This guide is the fastest way to get a working DPG instance on your machine.
 
 ## Prerequisites
 
-- Node.js compatible with the workspace dependencies
+- Node.js `>=24`
 - `pnpm` `10.28.1`
 - Docker Desktop or Docker Engine
 
@@ -21,6 +19,7 @@ For a normal local setup you run:
 - PostgreSQL
 - Redis
 - the API app
+- optionally the UI app
 - optionally the docs site
 
 ## 1. Install Dependencies
@@ -45,6 +44,8 @@ API_PORT="2742"
 SERVED_DOMAINS="yellow_dot/student"
 NETWORK_CONFIG_SOURCE="local"
 NETWORK_CONFIG_LOCAL_FILE="examples/schemas/yellow_dot/network.json"
+AUTH_SECRET="replace-this"
+REDIS_PASSWORD="replace-this"
 ```
 
 ## 3. Start PostgreSQL And Redis
@@ -64,18 +65,27 @@ The API should be available at:
 - `http://localhost:2742`
 - `http://localhost:2742/api/reference`
 
-## 5. Optional: Run The Docs Site
+## 5. Optional: Run The UI App
+
+```bash
+pnpm dev:ui
+```
+
+The UI reads schemas and network items from the API. Set `VITE_API_URL` in the UI environment when the API is not available at the default local URL.
+
+## 6. Optional: Run The Docs Site
 
 ```bash
 pnpm dev:docs
 ```
 
-## 6. Create Test Data
+## 7. Create Test Data
 
 Use one of the payloads from:
 
 - `examples/api/yellow_dot.md`
 - `examples/api/blue_dot.md`
+- `examples/postman/dpg.postman_collection.json`
 
 Remember:
 
@@ -114,8 +124,11 @@ NETWORK_CONFIG_URLS="yellow_dot=https://registry.example.com/schemas/yellow_dot/
 ## Useful Commands
 
 - `pnpm dev:api`
+- `pnpm dev:ui`
 - `pnpm build:api`
+- `pnpm build:ui`
 - `pnpm preview:api`
+- `pnpm preview:ui`
 - `pnpm start:api`
 - `pnpm db:generate:api`
 - `pnpm db:migrate:api`
@@ -128,6 +141,6 @@ NETWORK_CONFIG_URLS="yellow_dot=https://registry.example.com/schemas/yellow_dot/
 1. [Vocabulary](/concepts/vocabulary)
 2. [Architecture](/concepts/architecture)
 3. [Environment](/environment)
-4. [Schema Authoring Guide](/schemas/authoring)
+4. [Network Schema Authoring Guide](/schemas/authoring)
 5. [API Overview](/apps/api)
 6. one of the hosting guides

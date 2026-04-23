@@ -4,8 +4,6 @@ description: Internal runtime flow for the current DPG implementation.
 head: []
 ---
 
-# Flow Structure
-
 This page is the implementation-oriented companion to the higher-level [Architecture](/concepts/architecture) guide.
 
 ## 1. Environment and runtime config
@@ -28,6 +26,7 @@ That identity is used with the network config to decide:
 
 - which registered instance origins should be allowed through CORS
 - which network/domain context the backend exposes at its root endpoint
+- which create, local fetch, schema, action, and event requests are accepted
 
 ## 3. Network config
 
@@ -42,6 +41,8 @@ The network config defines:
 
 The API can load this config from a local JSON file in development or remote schema URLs in production.
 
+Loaded configs are memoized in `apps/api/src/network_configs.ts`. `POST /api/v1/network/refetch_schemas` refreshes the network configs and repopulates the schema cache.
+
 ## 4. API layer
 
 The API app uses Fastify and mounts:
@@ -53,6 +54,13 @@ The most important fetch split is:
 
 - `/api/v1/item/fetch`: local-only fetch
 - `/api/v1/network/item/fetch`: inter-instance fetch
+
+The action split is:
+
+- `/api/v1/action/perform`: source-facing action request
+- `/api/v1/network/action/perform`: target-facing action creation endpoint
+- `/api/v1/action/update-status`: target-side status transitions
+- `/api/v1/event/store`: mirrored event ingestion
 
 ## 5. Data layer
 
@@ -73,9 +81,20 @@ Partitions are intentionally not hardcoded in the base SQL. They are created per
 - the default `zod` export used across the repo
 - request/response schemas
 - a fetch helper for remote schema JSON
+- network config parsing and helpers
+- JSON Schema validation through AJV 2020
+
+`apps/api/src/network_schema_cache.ts` caches:
+
+- network config documents
+- inline domain item schemas
+- remote instance custom item schemas
+- schema URLs referenced by stored items
 
 Checked-in example network configs now live under `examples/schemas`.
 
 ## 7. Auth and OTP
 
 `packages/auth` wraps Better Auth setup and adds the custom `unifiedOtp` plugin for phone/email OTP flows.
+
+The UI uses `/auth/login` and `/auth/otp` routes, then stores the bearer token for API requests.

@@ -4,8 +4,6 @@ description: How Better Auth and the custom unified OTP plugin are used in this 
 head: []
 ---
 
-# Better Auth And Unified OTP
-
 The auth system is built around `better-auth/minimal` and a custom plugin from `packages/auth/plugins/unified_otp.ts`.
 
 ## Where auth is created
@@ -38,9 +36,9 @@ The `unifiedOtp` plugin supports a shared OTP flow for:
 
 The plugin defines endpoints such as:
 
-- `checkUser`
-- `requestOtp`
-- `verifyOtp`
+- `POST /api/auth/unified-otp/check-user`
+- `POST /api/auth/unified-otp/request`
+- `POST /api/auth/unified-otp/verify`
 
 These are exposed through the Better Auth handler mounted in the API.
 
@@ -61,3 +59,7 @@ The auth instance currently uses `allowed_origins` from the config package as `t
 `CREATE_TEST_OTP=true` enables predictable OTP generation for testing.
 
 Use this only in safe development or testing environments.
+
+## Middleware flag
+
+`AUTH_MIDDLEWARE_ENABLED=false` can disable protected route checks in development. The API ignores that flag in production and always enables auth middleware.

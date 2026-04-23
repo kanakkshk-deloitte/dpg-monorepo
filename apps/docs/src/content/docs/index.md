@@ -4,8 +4,6 @@ description: A practical introduction to the DPG model, runtime, and documentati
 head: []
 ---
 
-# What Is DPG?
-
 DPG is a network-aware backend model for publishing, validating, discovering, and interacting with items across many instances.
 
 The core model is:
@@ -44,7 +42,7 @@ DPG is useful when:
 2. [Architecture](/concepts/architecture)
 3. [Getting Started](/getting-started)
 4. [Environment](/environment)
-5. [Schema Authoring Guide](/schemas/authoring)
+5. [Network Schema Authoring Guide](/schemas/authoring)
 6. [API Overview](/apps/api)
 7. the hosting guide that matches your deployment model
 

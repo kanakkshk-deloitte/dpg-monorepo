@@ -1,138 +1,71 @@
 ---
-title: DOT Example Schemas
-description: Walkthrough of the Yellow Dot education network config and its domain schemas.
+title: Existing Example Networks
+description: Walkthrough of the checked-in Yellow Dot and Blue Dot network configs.
 head: []
 ---
 
-# DOT Example Schemas
+The repository includes complete example network configs under `examples/schemas`.
 
-`packages/schemas/src/dot_examples/` contains a worked example of a DOT network — the "Yellow Dot" education network. These files are the canonical reference for what a complete network config looks like in practice.
+## Yellow Dot
 
-## File Layout
+Path:
 
-| File | What it defines |
-|------|----------------|
-| `network.json` | Top-level network config — domains, instances, and actions |
-| `domain.json` | Student profile schema |
-| `learner_domain.json` | Learner (seeker) profile schema |
-| `tutor_counsellor_domain.json` | Tutor/counsellor (provider) profile schema |
-| `learner_tutor_action.json` | A connect action with a remote `$ref` requirement schema |
-| `index.ts` | Re-exports `educationNetwork` from `network.json` |
+- `examples/schemas/yellow_dot/network.json`
 
-## Network Config (`network.json`)
+Use case:
 
-The top-level document wires everything together.
+- education network
 
-```json
-{
-  "name": "yellow_dot",
-  "domains": [
-    { "name": "student_profile", "default_item_schemas": { "profile": { "$ref": "./domain.json" } } },
-    { "name": "learner_profile",  "default_item_schemas": { "profile": { "$ref": "./learner_domain.json" } } },
-    { "name": "tutor_counsellor_profile", "default_item_schemas": { "profile": { "$ref": "./tutor_counsellor_domain.json" } } },
-    { "name": "coaching_center",  "default_item_schemas": { "profile": { "..." } } }
-  ],
-  "instances": [ "..." ],
-  "actions": {
-    "connect": {
-      "interactions": [ "..." ]
-    }
-  }
-}
-```
+Domains:
 
-Each domain's `default_item_schemas.profile` is a `$ref` to its own file. The UI engine resolves these at runtime.
+- `student`
+- `tutor`
+- `coaching_center`
 
-The `connect` action defines 12 bidirectional interaction pairs across the 4 domains.
+Item schema examples:
 
-## Student Profile Schema (`domain.json`)
+- `student.profile_1.0`
+- `student.profile_1.1`
+- `tutor.profile_1.0`
+- `coaching_center.profile_1.0`
 
-Represents a student registering on the network.
+Action:
 
-| Property | Type | Private | Notes |
-|----------|------|---------|-------|
-| `student_id` | string | — | Unique identifier |
-| `full_name` | string | — | Display name |
-| `date_of_birth` | string (date) | yes | Not shown on public cards |
-| `grade` | string | — | e.g. "Grade 10" |
-| `email` | string (email) | yes | Not shown on public cards |
-| `phone` | string | yes | Not shown on public cards |
-| `address` | object | yes | Street, city, pincode |
-| `guardian` | object | yes | Guardian name + contact |
-| `academic_details` | object | — | Board, subjects, scores |
+- `connect`
 
-## Learner Profile Schema (`learner_domain.json`)
+The `connect` action currently allows a `student` to connect to a `tutor`. The requirement payload captures the subject and goal, and the event payload captures status and message fields.
 
-Represents a learner looking for tuition or counselling.
+## Blue Dot
 
-| Property | Type | Notes |
-|----------|------|-------|
-| `learner_id` | string | Unique identifier |
-| `pincode` | string | Used for map geocoding |
-| `grade_band` | string | e.g. "6-8", "9-10" |
-| `capability_band` | string | e.g. "beginner", "advanced" |
-| `academic_stream` | string | Science / Commerce / Arts |
-| `service_type` | string | Tuition / counselling |
-| `subject_or_domain` | string | Specific subject requested |
+Path:
 
-## Tutor / Counsellor Profile Schema (`tutor_counsellor_domain.json`)
+- `examples/schemas/blue_dot/network.json`
 
-Represents a provider offering tutoring or counselling services.
+Use case:
 
-| Property | Type | Notes |
-|----------|------|-------|
-| `provider_id` | string | Unique identifier |
-| `pincode` | string | Used for map geocoding |
-| `coverage_radius_km` | number | Geographic coverage |
-| `provider_type` | string | "tutor" or "counsellor" |
-| `domain_specialisations` | array | List of subject areas |
-| `credentials` | object | Qualifications and certifications |
-| `target_grade_band` | string | Grade range served |
+- jobs and hiring network
 
-## Privacy Convention
+Domains:
 
-Mark a property as private by adding `"private": true` at the property level:
+- `seeker`
+- `provider`
 
-```json
-{
-  "properties": {
-    "phone": {
-      "type": "string",
-      "private": true
-    }
-  }
-}
-```
+Item schema examples:
 
-The UI engine's `filterSchemaByPrivacy` and `filterDataBySchema` functions use this flag to:
+- `seeker.profile_1.0`
+- `provider.job_posting_1.0`
 
-- hide private fields on public cards
-- exclude private data from map markers
-- show all fields in the profile edit form (`PrivacyMode = 'all'`)
+Action:
 
-## Action Schema (`learner_tutor_action.json`)
+- `apply`
 
-A connect action references a remote requirement schema:
+The `apply` action allows a seeker to apply to a provider's job posting. The requirement payload captures job id, cover note, and optional resume URL. The event payload captures application status and message.
 
-```json
-{
-  "from_domain": "learner_profile",
-  "to_domain": "tutor_counsellor_profile",
-  "requirement_schema": {
-    "$ref": "https://registry.example.com/learner-tutor-connect-v1.json"
-  }
-}
-```
+## Example Payloads
 
-The UI engine resolves the `$ref` at runtime and feeds the resolved schema into `SchemaForm` inside the `ActionModal`.
+Request payload examples live in:
 
-## Using the Example in Code
+- `examples/api/yellow_dot.md`
+- `examples/api/blue_dot.md`
 
-```ts
-import { educationNetwork } from '@dpg/schemas';
-
-// educationNetwork is the parsed network.json object
-// $ref fields are not pre-resolved here — use resolveNetworkRefs from the UI engine
-```
-
-For server-side use, `fetchSchema` from `@dpg/schemas` can load and resolve the network config from a URL (see [Schemas Package](/packages/schemas-and-registry)).
+Use these examples to verify API behavior after authoring a new network schema.

@@ -4,8 +4,6 @@ description: How DPG is structured at runtime and how requests move through the 
 head: []
 ---
 
-# Architecture
-
 DPG has four main layers:
 
 1. network contract
@@ -61,6 +59,7 @@ DPG exposes three broad route groups:
 - item APIs
 - action and event APIs
 - network APIs
+- Better Auth APIs mounted under `/api/auth/*`
 
 ## Request Flows
 
@@ -90,6 +89,24 @@ DPG exposes three broad route groups:
 5. a page plan is built from the counts
 6. aggregator calls `fetch_local` only on contributing instances
 7. results are merged and cached in Redis
+
+### Cross-instance action
+
+1. client calls `POST /api/v1/action/perform` on the source item instance
+2. source instance validates that it serves the source domain
+3. source instance validates the target instance against the target network config
+4. source instance forwards the action to `POST /api/v1/network/action/perform` on the target instance
+5. target instance validates `requirements_snapshot` against the action interaction schema
+6. target instance stores the action and an initial event
+7. target instance mirrors the event back to the source instance when the source lives elsewhere
+
+### Action status update
+
+1. target-side user calls `POST /api/v1/action/update-status`
+2. target instance increments `update_count`
+3. target instance stores a new action event
+4. event payload is validated against `event_schema` when configured
+5. the event is mirrored to the source instance
 
 ## Why DPG Splits Local And Network Fetch
 

@@ -4,8 +4,6 @@ description: How to reach PostgreSQL, Redis, and Drizzle tooling in this monorep
 head: []
 ---
 
-# DB Access
-
 ## Runtime connections
 
 The API builds runtime database URLs in `apps/api/src/config.ts`.

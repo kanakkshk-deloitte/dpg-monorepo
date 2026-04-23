@@ -4,8 +4,6 @@ description: How to host multiple domains or networks across one or many DPG ins
 head: []
 ---
 
-# Multi-Instance Hosting
-
 DPG supports two common multi-instance patterns:
 
 1. one backend serving many bindings

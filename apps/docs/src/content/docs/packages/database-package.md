@@ -4,8 +4,6 @@ description: What the database package exposes and how to use it.
 head: []
 ---
 
-# Database Package
-
 `packages/database` contains the data-layer contracts shared by the API.
 
 ## What it exposes
@@ -34,10 +32,10 @@ The API uses:
 ## SQL files
 
 - `create_items.sql` contains generic parent table DDL
-- `migrate_items_add_created_by.sql` adds item ownership to an existing `items` table
 - `create_items_partitions.example.sql` contains example partition definitions only
 - `create_actions_events.sql` contains generic parent table DDL for action and event runtime tables
 - `create_actions_events_partitions.example.sql` contains example action and event partitions only
+- `add_action_owner_columns.sql` upgrades older action/event tables with owner snapshot columns
 
 ## Postgres setup flow
 
@@ -49,7 +47,7 @@ The database setup is split into two parts on purpose:
 
 The first script creates the parent partitioned tables and shared indexes. The second script creates deployment-specific item-type partitions.
 
-If your database already has an `items` table from an earlier version, run `migrate_items_add_created_by.sql` before using the ownership-enforced item APIs.
+If your database already has action/event tables from an earlier version, run `add_action_owner_columns.sql` before using the ownership-enforced action and event fetch APIs.
 
 ## Extensions used
 
@@ -84,21 +82,25 @@ Important columns in `items`:
 Important columns in `item_actions`:
 
 - action identity: `action_name`, `action_id`
-- source item reference: `source_item_network`, `source_item_domain`, `source_item_type`, `source_item_id`
-- target item reference: `target_item_network`, `target_item_domain`, `target_item_type`, `target_item_id`
-- action state: `status`, `requirements_snapshot`
-- audit fields: `created_by`, `created_at`, `updated_at`
+- action state: `action_status`, `update_count`, `requirements_snapshot`, `remarks`
+- source item reference: `source_item_network`, `source_item_domain`, `source_item_type`, `source_item_id`, `source_item_instance_url`
+- source owner snapshot: `source_item_owner`
+- target item reference: `target_item_network`, `target_item_domain`, `target_item_type`, `target_item_id`, `target_item_instance_url`
+- target owner snapshot: `target_item_owner`
+- timestamps: `created_at`, `updated_at`
 
 Important columns in `action_events`:
 
-- event identity: `event_type`, `event_id`
-- action reference: `action_name`, `action_id`
-- source item reference: `source_item_network`, `source_item_domain`, `source_item_type`, `source_item_id`
-- target item reference: `target_item_network`, `target_item_domain`, `target_item_type`, `target_item_id`
-- event data: `event_payload`, `event_metadata`
-- audit fields: `created_by`, `occurred_at`, `created_at`
+- event identity: `action_name`, `event_id`
+- origin and action state: `origin_instance_domain`, `action_id`, `action_status`, `update_count`
+- source item reference: `source_item_network`, `source_item_domain`, `source_item_type`, `source_item_id`, `source_item_instance_url`
+- source owner and geo snapshots: `source_item_owner`, `source_item_latitude`, `source_item_longitude`
+- target item reference: `target_item_network`, `target_item_domain`, `target_item_type`, `target_item_id`, `target_item_instance_url`
+- target owner and geo snapshots: `target_item_owner`, `target_item_latitude`, `target_item_longitude`
+- event data: `event_payload`, `remarks`
+- timestamp: `created_at`
 
-`created_by` in both `item_actions` and `action_events` is a foreign key to the Better Auth `user` table. Test payloads must use a real existing `user.id` value. A placeholder like `USER_ID` will fail the insert with a foreign key error.
+`source_item_owner` and `target_item_owner` are denormalized snapshots. They let the API answer `GET /api/v1/action/fetch` and `GET /api/v1/event/fetch` for the authenticated user without joining back through remote instances.
 
 `item_actions` has foreign keys back to `items` for both source and target items.
 
@@ -110,12 +112,12 @@ Important columns in `action_events`:
 
 That keeps every event tied to the runtime action that emitted it.
 
-## Event payload vs event metadata
+## Event payload and remarks
 
-The intended difference is:
+The current runtime stores domain event data in `event_payload` and operator-visible context in `remarks`.
 
 - `event_payload`: the business event body itself. This is the domain-specific content that describes what happened.
-- `event_metadata`: transport, tracing, ingestion, or processing context around the event.
+- `remarks`: a short human-readable note for action status updates or mirrored events.
 
 Use `event_payload` for values that matter to the event semantics, for example:
 
@@ -124,15 +126,7 @@ Use `event_payload` for values that matter to the event semantics, for example:
 - messages
 - references used by downstream business logic
 
-Use `event_metadata` for values that help operate the system, for example:
-
-- request ids
-- source service names
-- ingestion timestamps from an upstream system
-- retry counters
-- debug or audit annotations
-
-As a rule: if changing the field would change the meaning of the event, it belongs in `event_payload`. If it only changes how the event was delivered, observed, or processed, it belongs in `event_metadata`.
+As a rule: if changing the field would change the meaning of the event, it belongs in `event_payload`. If it only explains the status transition, it belongs in `remarks`.
 
 ## Partition strategy
 
@@ -191,7 +185,7 @@ The package exports:
 
 - `ensureItemPartition(db, network, domain, type)`
 - `ensureActionPartition(db, actionName)`
-- `ensureActionEventPartition(db, eventType)`
+- `ensureActionEventPartition(db, actionName)`
 
 This helper creates missing partitions lazily with `CREATE TABLE IF NOT EXISTS`.
 
@@ -205,15 +199,9 @@ This helper creates missing partitions lazily with `CREATE TABLE IF NOT EXISTS`.
 
 `ensureActionEventPartition()` creates:
 
-1. `<event_type>_event`
+1. `<action_name>_event`
 
-The helper validates `item_type` with this rule:
-
-```ts
-/^[a-z][a-z0-9_]{0,20}$/
-```
-
-That keeps generated table names safe and short enough for PostgreSQL identifiers.
+The helper accepts any non-empty partition key up to 120 characters. It normalizes generated table names by lowercasing the key, removing non-alphanumeric characters, truncating to PostgreSQL's identifier limit, and appending `_item`, `_action`, or `_event`.
 
 ## Why query filters matter
 
@@ -340,17 +328,21 @@ await ensureActionPartition(db, 'connect');
 
 await db.insert(item_actions).values({
   action_name: 'connect',
+  action_status: 'created',
+  update_count: 0,
   source_item_network: 'yellow_dot',
   source_item_domain: 'student',
   source_item_type: 'profile',
   source_item_id: '11111111-1111-1111-1111-111111111111',
+  source_item_instance_url: 'https://student.yellowdot.example.com',
+  source_item_owner: 'student_user_id',
   target_item_network: 'yellow_dot',
   target_item_domain: 'tutor',
   target_item_type: 'profile',
   target_item_id: '22222222-2222-2222-2222-222222222222',
-  status: 'pending',
+  target_item_instance_url: 'https://tutor.yellowdot.example.com',
+  target_item_owner: 'tutor_user_id',
   requirements_snapshot: { subject: 'math', goal: 'board_exam' },
-  created_by: 'user_123',
 });
 ```
 
@@ -359,23 +351,27 @@ await db.insert(item_actions).values({
 ```ts
 import { action_events, ensureActionEventPartition } from '@dpg/database';
 
-await ensureActionEventPartition(db, 'action_response');
+await ensureActionEventPartition(db, 'connect');
 
 await db.insert(action_events).values({
-  event_type: 'action_response',
   action_name: 'connect',
+  origin_instance_domain: 'https://tutor.yellowdot.example.com',
   action_id: '33333333-3333-3333-3333-333333333333',
+  action_status: 'created',
+  update_count: 0,
   source_item_network: 'yellow_dot',
   source_item_domain: 'student',
   source_item_type: 'profile',
   source_item_id: '11111111-1111-1111-1111-111111111111',
+  source_item_instance_url: 'https://student.yellowdot.example.com',
+  source_item_owner: 'student_user_id',
   target_item_network: 'yellow_dot',
   target_item_domain: 'tutor',
   target_item_type: 'profile',
   target_item_id: '22222222-2222-2222-2222-222222222222',
-  event_payload: { status: 'pending', message: 'Interested in connecting' },
-  event_metadata: { request_id: 'req_123', ingestion_source: 'public_api' },
-  created_by: 'user_123',
+  target_item_instance_url: 'https://tutor.yellowdot.example.com',
+  target_item_owner: 'tutor_user_id',
+  event_payload: { status: 'created', message: 'Action created' },
 });
 ```
 
@@ -394,7 +390,7 @@ const events = await db
       eq(action_events.action_id, '33333333-3333-3333-3333-333333333333')
     )
   )
-  .orderBy(desc(action_events.occurred_at));
+  .orderBy(desc(action_events.created_at));
 ```
 
 ## Practical rules

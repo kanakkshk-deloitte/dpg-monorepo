@@ -4,8 +4,6 @@ description: What the auth package provides and how apps consume it.
 head: []
 ---
 
-# Auth Package
-
 `packages/auth` wraps Better Auth into a reusable package-level factory.
 
 ## What it exposes

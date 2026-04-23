@@ -4,15 +4,13 @@ description: Internal package-level overview for contributors working inside the
 head: []
 ---
 
-# Package Overview
-
 The monorepo keeps shared runtime logic in `packages/*`. Each package has a narrow role and is meant to be consumed by apps such as `apps/api`.
 
 Most readers should start with the higher-level guides first:
 
 - [What Is DPG?](/)
 - [Architecture](/concepts/architecture)
-- [Schema Authoring Guide](/schemas/authoring)
+- [Network Schema Authoring Guide](/schemas/authoring)
 - [API Overview](/apps/api)
 
 ## At a glance
@@ -20,10 +18,10 @@ Most readers should start with the higher-level guides first:
 - `packages/auth`: Better Auth setup, plugin wiring, and unified OTP support
 - `packages/config`: env schemas, allowed-origin helpers, and network runtime helpers
 - `packages/database`: Drizzle ref tables, partition helpers, and base SQL scripts
-- `packages/notification`: notification client and provider-facing types
+- `packages/notification`: HMAC notification client, auth header helpers, and provider-facing types
 - `packages/schemas`: Zod export, API schemas, and schema fetching
 
-Checked-in example network configs and request payloads live under `examples/`.
+Checked-in example network configs, Postman collections, and API walkthroughs live under `examples/`.
 
 ## How to read the package layout
 
@@ -43,3 +41,4 @@ Use the dedicated pages for package-level usage patterns:
 - `Database Package`
 - `Schemas Package`
 - `Auth Package`
+- `Notification Package`

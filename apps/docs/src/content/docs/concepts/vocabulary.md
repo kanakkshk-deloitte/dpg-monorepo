@@ -4,8 +4,6 @@ description: Common DPG terms and how they relate to one another.
 head: []
 ---
 
-# Vocabulary
-
 This page defines the words used across DPG.
 
 ## Network

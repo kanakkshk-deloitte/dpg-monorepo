@@ -1,10 +1,8 @@
 ---
 title: Network Schema Reference
-description: Reference documentation for the final DPG network schema structure and runtime behavior.
+description: Reference documentation for DPG network schema structure and current runtime behavior.
 head: []
 ---
-
-# Network Schema Reference
 
 The DPG network schema is a runtime contract.
 
@@ -24,13 +22,15 @@ The DPG network schema is a runtime contract.
 
 ## Top-Level Fields
 
-- `name`
-- `display_name`
-- `description`
-- `schema_standard`
-- `domains`
-- `instances`
-- `actions`
+| Field | Required | Runtime use |
+|-------|----------|-------------|
+| `name` | yes | API payload network id and default action network |
+| `display_name` | no | UI/network display label |
+| `description` | no | Human-readable context |
+| `schema_standard` | no | JSON Schema draft reference |
+| `domains` | yes | Domain, item schema, and cache contract |
+| `instances` | yes | Instance discovery and action target validation |
+| `actions` | yes | Allowed interactions and payload validation |
 
 ## Domain Fields
 
@@ -57,7 +57,7 @@ Example:
 }
 ```
 
-`default_item_schemas` is still accepted for backward compatibility, but `item_schemas` is the canonical shape.
+`default_item_schemas` is still accepted for backward compatibility. At runtime, `default_item_schemas` is merged first and `item_schemas` wins on duplicate keys. Prefer `item_schemas` for new network documents.
 
 ## Instance Fields
 
@@ -73,6 +73,8 @@ If a specific instance needs to override the payload for a supported `item_type`
 }
 ```
 
+`schema_url` is also accepted as a compatibility shortcut for the `profile` item type. During parsing it is converted into `custom_item_schema_urls.profile`.
+
 ## Action Fields
 
 Actions define interaction rules.
@@ -82,7 +84,9 @@ Actions define interaction rules.
   "connect": {
     "interactions": [
       {
+        "from_network": "yellow_dot",
         "from_domain": "student",
+        "to_network": "yellow_dot",
         "to_domain": "tutor",
         "requirement_schema": { "...": "..." },
         "event_schema": { "...": "..." }
@@ -92,14 +96,28 @@ Actions define interaction rules.
 }
 ```
 
+`from_network` and `to_network` are optional. When omitted, the current network name is used. Include them for cross-network interactions.
+
 ## Runtime Usage In DPG
+
+API-enforced behavior:
 
 - `POST /api/v1/item/create` checks that `item_type` exists in `domains[].item_schemas`
 - `POST /api/v1/item/create` validates `item_state` and generates `item_instance_url` and `item_schema_url`
 - `GET /api/v1/item/fetch` is instance-local
 - `GET /api/v1/network/item/fetch` is inter-instance and honors `minimum_cache_ttl_seconds`
 - `POST /api/v1/action/perform` validates `requirements_snapshot` against `requirement_schema`
-- `POST /api/v1/action/perform` and `POST /api/v1/event/store` validate event payloads against `event_schema`
+- `POST /api/v1/network/action/perform` creates the target-side action and initial event
+- `POST /api/v1/action/update-status` validates generated event payloads against `event_schema`
+- `POST /api/v1/event/store` validates mirrored event payloads against `event_schema`
 - `GET /api/v1/network/schemas` returns cached schema documents
 - `GET /api/v1/network/schema/:network/:domain/:itemType` exposes one concrete schema
 - `POST /api/v1/network/refetch_schemas` refreshes schema cache
+
+UI-interpreted behavior:
+
+- `domains[]` drives the sidebar and create-profile domain choices
+- `item_schemas` drive forms and cards
+- `private: true` hides fields on public cards and map markers
+- action `requirement_schema` drives action modal forms
+- the current UI focuses on `connect`, though the schema/API model supports multiple action names
