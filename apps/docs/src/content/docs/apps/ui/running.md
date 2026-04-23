@@ -33,6 +33,10 @@ pnpm preview:ui
 | `VITE_NETWORK_NAME` | first returned network | Comma-separated allowlist of network names to expose in the UI |
 | `VITE_MAP_PROVIDER` | `leaflet` | Active registered map provider |
 | `VITE_GEOCODING_API_URL` | `api.postalpincode.in` | Pincode geocoding endpoint |
+| `VITE_VC_WALLET_URL` | — | Base URL for the wallet credential service used by the Dhiway Wallet provider |
+| `VITE_VC_WALLET_API_KEY` | — | API key sent to the wallet credential service when fetching verified credentials |
+| `VITE_AGENT_URL` | — | Base URL for the DigiLocker agent service |
+| `VITE_AGENT_TOKEN` | — | Bearer token used for DigiLocker agent requests |
 
 ## Required Backend Routes
 
@@ -50,6 +54,11 @@ pnpm preview:ui
 | OTP check/request/verify | `/api/auth/unified-otp/*` |
 | Session lookup | `GET /api/auth/get-session` |
 | Sign out | `POST /api/auth/sign-out` |
+| Wallet code request | `POST <VITE_VC_WALLET_URL>/api/v1/auth/request-code` |
+| Wallet code verification | `POST <VITE_VC_WALLET_URL>/api/v1/auth/verify-code` |
+| Wallet credential fetch | `GET <VITE_VC_WALLET_URL>/api/v1/verified-credentials` |
+| DigiLocker authorization launch | `GET <VITE_AGENT_URL>/api/v1/discover/digilocker-request` |
+| DigiLocker credential pull | `POST <VITE_AGENT_URL>/api/v1/discover/digilocker-auth` |
 
 The UI expects `/api/v1/network/schemas` to include entries with `kind === 'network_config'`.
 
@@ -67,3 +76,10 @@ The UI expects `/api/v1/network/schemas` to include entries with `kind === 'netw
 - `LoginPage` supports both phone and email identifiers.
 - OTP verification stores the returned bearer token and hydrates the session in `AuthProvider`.
 - `RequireAuth` redirects protected routes to `/auth/login?redirect=...` and returns users to the original path after login.
+
+## Credential Import Notes
+
+- The `Import Credentials` button appears on the profile form only when a schema is active and at least one wallet provider is configured.
+- Dhiway Wallet uses the signed-in user's email or phone number as the identifier for code verification and credential retrieval.
+- DigiLocker opens an external popup flow and can finish either through a redirect bridge page or by manually pasting the returned code or redirect URL.
+- Imported values are merged into the active schema through alias-aware field matching instead of provider-specific per-form code.

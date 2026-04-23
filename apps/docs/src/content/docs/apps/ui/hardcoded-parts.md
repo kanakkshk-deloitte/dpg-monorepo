@@ -22,6 +22,10 @@ These are current product choices in `apps/ui`. Treat them as replaceable when b
 | Auth | OTP auth is the only built login flow, but it now accepts either phone numbers or email addresses |
 | Item language | The UI calls generic items “profiles” |
 | Action polling | My Actions badges and lists poll every 5 seconds |
+| Credential import trigger | The import button appears on profile forms only when at least one provider reports itself as configured |
+| Wallet providers shipped today | `dhiway-wallet` and `digilocker` are pre-registered at startup |
+| Dhiway wallet identifier source | The flow uses the signed-in user's email or phone number instead of asking for arbitrary identifiers |
+| DigiLocker callback convention | Automatic popup completion expects a redirect URL containing `wallet-redirect?code=` or a bridge page posting that code back |
 
 ## Customization Points
 
@@ -34,3 +38,4 @@ To generalize the UI:
 - replace the OTP pages if your product uses another login flow
 - make map center and geocoding rules configurable
 - choose explicit action prioritization instead of relying on first-match behavior
+- move provider enablement and provider ordering into deploy-time configuration if different instances need different import catalogs
