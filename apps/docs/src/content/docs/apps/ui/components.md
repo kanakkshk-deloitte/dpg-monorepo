@@ -9,8 +9,8 @@ head: []
 | Component | File | Purpose |
 |-----------|------|---------|
 | `PageShell` | `components/layout/page-shell.tsx` | Root layout with sidebar, top bar, and content region |
-| `AppSidebar` | `components/layout/sidebar.tsx` | Network selector, domain browsing, profile list, create/edit links |
-| `TopBar` | `components/layout/top-bar.tsx` | Search input and list/map view toggle |
+| `AppSidebar` | `components/layout/sidebar.tsx` | Network selector, domain browsing, grouped profiles, create/edit links, and My Actions entry |
+| `TopBar` | `components/layout/top-bar.tsx` | Search input, list/map toggle, dev API selector, auth controls, and pending-action bell |
 
 ## Cards
 
@@ -34,16 +34,30 @@ head: []
 |-----------|------|---------|
 | `ActionHandler` | `components/actions/action-handler.tsx` | Owns action modal state and submit lifecycle |
 | `ActionModal` | `components/actions/action-modal.tsx` | Desktop dialog/mobile drawer for action requirement forms |
+| `ActionList` | `components/actions/action-list.tsx` | Inbox/outbox tabs, refresh handling, and empty/error states for My Actions |
+| `ActionCard` | `components/actions/action-card.tsx` | Per-action summary card in the initiated/received lists |
+| `ActionStatusUpdater` | `components/actions/action-status-updater.tsx` | Dialog/drawer for status transitions, remarks, and optional event schema data |
 
 ## Auth
 
 | Component | File | Purpose |
 |-----------|------|---------|
 | `AuthProvider` | `contexts/auth-context.tsx` | User/session/token state |
-| `LoginPage` | `pages/auth/login-page.tsx` | Phone number entry and OTP request |
-| `OtpPage` | `pages/auth/otp-page.tsx` | OTP verification |
+| `RequireAuth` | `components/auth/require-auth.tsx` | Route guard with redirect-to-login behavior |
+| `LoginPage` | `pages/auth/login-page.tsx` | Email or phone entry, user check, and OTP request |
+| `OtpPage` | `pages/auth/otp-page.tsx` | OTP verification and redirect restoration |
 | `OtpInput` | `components/auth/otp-input.tsx` | OTP entry control |
 | `UserMenu` | `components/auth/user-menu.tsx` | Signed-in user and sign-out UI |
+
+## Pages
+
+| Page | File | Purpose |
+|------|------|---------|
+| `HomePage` | `pages/home-page.tsx` | Loads network config, resolves schemas, fetches items, and renders list/map browsing |
+| `ProfileFormPage` | `pages/profile-form-page.tsx` | Create/edit flow with network-aware schema and geocoding support |
+| `MyActionsPage` | `pages/my-actions-page.tsx` | Polling inbox/outbox screen for initiated and received actions |
+| `LoginPage` | `pages/auth/login-page.tsx` | Login/signup entry point |
+| `OtpPage` | `pages/auth/otp-page.tsx` | OTP verification step |
 
 ## Maps
 

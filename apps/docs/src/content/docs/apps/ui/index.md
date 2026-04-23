@@ -4,12 +4,12 @@ description: Schema-driven React frontend overview and navigation for the UI imp
 head: []
 ---
 
-The UI app lives in `apps/ui`. It is a React 19 + Vite frontend that renders network browsing, profile forms, cards, maps, and action modals from DPG network schema documents.
+The UI app lives in `apps/ui`. It is a React 19 + Vite frontend that renders network browsing, profile forms, cards, maps, action modals, and action-management screens from DPG network schema documents.
 
 The important split is:
 
 - **network schema driven**: domains, item schemas, public fields, action requirement forms, and network configs
-- **application hardcoded**: page routes, auth flow, current `connect` action assumptions, some title/icon/location heuristics, and layout behavior
+- **application hardcoded**: page routes, auth flow, title/icon/location heuristics, and layout behavior
 - **reusable UI engine**: schema loading, `$ref` resolution, privacy filtering, schema forms, cards, action modal flow, map provider registry, and API clients
 
 ## Guide Pages
@@ -28,6 +28,7 @@ The important split is:
 
 - React 19 + Vite
 - React Router
+- TanStack Query
 - Tailwind CSS + shadcn/ui
 - React JSON Schema Form with AJV8 validation
 - Axios for API calls
@@ -42,7 +43,10 @@ The important split is:
 | `/` | `HomePage` | Browse network participants by domain in list or map mode |
 | `/profile/new` | `ProfileFormPage` | Create an item/profile from a selected domain schema |
 | `/profile/:id/edit` | `ProfileFormPage` | Edit an owned item/profile |
-| `/auth/login` | `LoginPage` | Start phone OTP login or signup |
+| `/auth/login` | `LoginPage` | Start email-or-phone OTP login or signup |
 | `/auth/otp` | `OtpPage` | Verify OTP and persist the bearer token |
+| `/my-actions` | `MyActionsPage` | Review initiated and received actions and update statuses |
 
-The `?as=<domain>` query param on `/` is a demo/runtime override for the current browsing role. The `?domain=<domain>` param controls the selected target domain. The `?view=list|map` param controls the view mode.
+`/profile/new`, `/profile/:id/edit`, and `/my-actions` are protected by `RequireAuth`.
+
+The `?network=<name>` query param selects the active network when multiple configured networks are available. The `?as=<domain>` query param on `/` is a runtime override for the current browsing role. The `?domain=<domain>` param controls the selected target domain. The `?view=list|map` param controls the view mode.

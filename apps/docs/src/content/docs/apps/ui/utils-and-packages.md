@@ -22,6 +22,7 @@ head: []
 | `lib/api-client.ts` | Axios client with bearer token attachment |
 | `lib/network-api.ts` | Network config and network item fetch calls |
 | `lib/item-api.ts` | Local item CRUD and action calls |
+| `lib/action-api.ts` | Action fetch, perform, update-status, and event-history calls |
 | `lib/auth-api.ts` | Unified OTP, session, and sign-out calls |
 | `lib/auth-token.ts` | Token storage helpers |
 | `lib/item-utils.ts` | Item geocoding/extraction helpers |
@@ -36,6 +37,7 @@ For equivalent schema decoding and display behavior, keep these package categori
 | `react`, `react-dom` | UI runtime |
 | `react-router-dom` | Routes and query params |
 | `@rjsf/core`, `@rjsf/shadcn`, `@rjsf/utils`, `@rjsf/validator-ajv8` | JSON Schema forms |
+| `@tanstack/react-query` | Query caching, polling, and mutation state for actions/network config |
 | `ajv`, `ajv-formats` | JSON Schema validation support |
 | `axios` | API client |
 | `@radix-ui/*`, `radix-ui`, `vaul` | Dialogs, drawers, popovers, selects, tooltips |

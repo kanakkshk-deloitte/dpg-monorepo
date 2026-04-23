@@ -15,7 +15,7 @@ The UI loads network config documents from the API and renders most domain behav
 | `domains[].description` | Human-readable domain labels |
 | `domains[].item_schemas` | Profile forms, card fields, map marker public data |
 | `instances[]` | Instance metadata available to create/fetch flows |
-| `actions.connect.interactions[]` | Visible target domains for the current source domain |
+| `actions.*.interactions[]` | Visible target domains and available action buttons for the current source domain |
 | `requirement_schema` | Dynamic action form in the modal/drawer |
 | `event_schema` | Stored in action metadata; not yet rendered as a full event UI |
 | JSON Schema `$ref` | Expanded before rendering through `resolveNetworkRefs()` / `resolveRefs()` |
@@ -47,4 +47,4 @@ The component does not need domain-specific code if it receives:
 
 Action modals render `requirement_schema` dynamically. When an action has no requirement schema, the UI can submit an empty requirements object.
 
-The current app only wires `connect`; a custom UI can render every valid action interaction from the network config.
+`HomePage` walks every entry in `network.actions` and matches `interactions` by `from_domain` and `to_domain`, so the list UI can render any configured action type without a dedicated `connect` code path.
