@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, GraduationCap, UserCheck, Building2 } from 'lucide-react';
+import { ArrowLeft, GraduationCap, UserCheck, Building2, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { RJSFSchema } from '@rjsf/utils';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { SchemaForm } from '@/components/forms/schema-form';
+import { WalletImportModal } from '@/components/wallet/wallet-import-modal';
 import { resolveNetworkRefs } from '@/engine/schema/resolve-schema';
 import type { DotNetworkSchema } from '@/engine/types';
+import { getConfiguredWalletProviders } from '@/engine/wallet/wallet-registry';
+import type { WalletImportResult } from '@/engine/wallet/types';
+import { useAuth } from '@/contexts/auth-context';
+import { mergeImportedDataIntoSchema } from '@/lib/import-mapping';
 
 import {
   createItem,
@@ -45,6 +50,7 @@ export function ProfileFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const isEdit = !!id;
 
   const [selectedDomain, setSelectedDomain] = React.useState<string | null>(null);
@@ -54,6 +60,7 @@ export function ProfileFormPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(isEdit);
   const [availableNetworkNames, setAvailableNetworkNames] = React.useState<string[] | null>(null);
+  const [isWalletModalOpen, setIsWalletModalOpen] = React.useState(false);
 
   // Get network from URL query param, fallback to env config
   const configuredNetworkNames = React.useMemo(
@@ -185,12 +192,65 @@ export function ProfileFormPage() {
   }, [selectedDomain, domains]);
 
   const selectedDomainInfo = domains.find((d) => d.name === selectedDomain);
+  const canImportCredentials = React.useMemo(
+    () => Boolean(profileSchema) && getConfiguredWalletProviders().length > 0,
+    [profileSchema]
+  );
 
   // Get network-level instance URL and schema URL for the selected domain
   const domainInstance = React.useMemo(() => {
     if (!selectedDomain || !network) return null;
     return network.instances?.find((i) => i.domain_name === selectedDomain) ?? null;
   }, [selectedDomain, network]);
+
+  const walletImportContext = React.useMemo(
+    () => ({
+      user: {
+        email: user?.email ?? null,
+        phoneNumber: user?.phoneNumber ?? null,
+        name: user?.name ?? 'User',
+      },
+      networkName: network?.name ?? null,
+      domainName: selectedDomain,
+      schema: profileSchema,
+      formData: initialData,
+    }),
+    [initialData, network?.name, profileSchema, selectedDomain, user?.email, user?.name, user?.phoneNumber]
+  );
+
+  const handleImportedCredentials = React.useCallback(
+    (result: WalletImportResult) => {
+      if (!profileSchema) {
+        toast.error('No active profile schema available for import');
+        return;
+      }
+
+      const { mergedData, mappedCount, skippedKeys } = mergeImportedDataIntoSchema(
+        profileSchema,
+        initialData,
+        result
+      );
+
+      if (mappedCount === 0) {
+        toast.error(`Imported from ${result.providerLabel}, but none of the fields matched this form.`);
+        return;
+      }
+
+      setInitialData(mergedData);
+
+      if (skippedKeys.length > 0) {
+        toast.success(`Imported ${mappedCount} field${mappedCount === 1 ? '' : 's'} from ${result.providerLabel}.`, {
+          description: `${skippedKeys.length} field${skippedKeys.length === 1 ? '' : 's'} did not match this schema.`,
+        });
+        return;
+      }
+
+      toast.success(`Imported ${mappedCount} field${mappedCount === 1 ? '' : 's'} from ${result.providerLabel}.`, {
+        description: result.summary,
+      });
+    },
+    [initialData, profileSchema]
+  );
 
   const handleSubmit = async (data: Record<string, unknown>) => {
     if (!selectedDomain || !network) return;
@@ -364,6 +424,14 @@ export function ProfileFormPage() {
             <CardDescription>
               {selectedDomainInfo?.description ?? 'Fill in your profile details'}
             </CardDescription>
+            {canImportCredentials ? (
+              <div>
+                <Button variant="outline" className="mt-2" onClick={() => setIsWalletModalOpen(true)}>
+                  <Wallet className="h-4 w-4" />
+                  Import Credentials
+                </Button>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent>
             {profileSchema && (
@@ -377,6 +445,12 @@ export function ProfileFormPage() {
             )}
           </CardContent>
         </Card>
+        <WalletImportModal
+          open={isWalletModalOpen}
+          onOpenChange={setIsWalletModalOpen}
+          context={walletImportContext}
+          onImported={handleImportedCredentials}
+        />
       </div>
     </div>
   );
