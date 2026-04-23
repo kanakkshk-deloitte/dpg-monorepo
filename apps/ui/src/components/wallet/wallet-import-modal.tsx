@@ -39,67 +39,71 @@ export function WalletImportModal({ open, onOpenChange, context, onImported }: W
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Import Credentials</DialogTitle>
-          <DialogDescription>
-            Choose a wallet provider and import verified profile details into this form.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-hidden p-0 sm:max-h-[90vh]">
+        <div className="flex max-h-[85vh] flex-col sm:max-h-[90vh]">
+          <DialogHeader className="border-b px-6 py-5">
+            <DialogTitle>Import Credentials</DialogTitle>
+            <DialogDescription>
+              Choose a wallet provider and import verified profile details into this form.
+            </DialogDescription>
+          </DialogHeader>
 
-        {!selectedProvider ? (
-          <div className="space-y-4">
-            {providers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No wallet providers are registered.</p>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            {!selectedProvider ? (
+              <div className="space-y-4">
+                {providers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No wallet providers are registered.</p>
+                ) : (
+                  providers.map((provider) => {
+                    const configured = provider.isConfigured();
+                    return (
+                      <Card key={provider.name} className="gap-4 py-4">
+                        <CardHeader className="px-4">
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <PlugZap className="h-4 w-4" />
+                            {provider.label}
+                          </CardTitle>
+                          <CardDescription>{provider.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-start justify-between gap-4 px-4 sm:flex-row sm:items-center">
+                          <p className="text-xs text-muted-foreground">
+                            {configured
+                              ? 'Ready to import.'
+                              : provider.getConfigurationHint?.() ?? 'Provider is not configured.'}
+                          </p>
+                          <Button disabled={!configured} onClick={() => setSelectedProviderName(provider.name)}>
+                            Use {provider.label}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+
+                {configuredProviders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Configure at least one provider before importing credentials.
+                  </p>
+                ) : null}
+              </div>
             ) : (
-              providers.map((provider) => {
-                const configured = provider.isConfigured();
-                return (
-                  <Card key={provider.name} className="gap-4 py-4">
-                    <CardHeader className="px-4">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <PlugZap className="h-4 w-4" />
-                        {provider.label}
-                      </CardTitle>
-                      <CardDescription>{provider.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between gap-4 px-4">
-                      <p className="text-xs text-muted-foreground">
-                        {configured
-                          ? 'Ready to import.'
-                          : provider.getConfigurationHint?.() ?? 'Provider is not configured.'}
-                      </p>
-                      <Button disabled={!configured} onClick={() => setSelectedProviderName(provider.name)}>
-                        Use {provider.label}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })
+              <div className="space-y-4">
+                <Button variant="ghost" className="w-fit" onClick={() => setSelectedProviderName(null)}>
+                  <ChevronLeft className="h-4 w-4" />
+                  Back to providers
+                </Button>
+                <selectedProvider.component
+                  context={context}
+                  onCancel={() => onOpenChange(false)}
+                  onSuccess={(result) => {
+                    onImported(result);
+                    onOpenChange(false);
+                  }}
+                />
+              </div>
             )}
-
-            {configuredProviders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Configure at least one provider before importing credentials.
-              </p>
-            ) : null}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <Button variant="ghost" className="w-fit" onClick={() => setSelectedProviderName(null)}>
-              <ChevronLeft className="h-4 w-4" />
-              Back to providers
-            </Button>
-            <selectedProvider.component
-              context={context}
-              onCancel={() => onOpenChange(false)}
-              onSuccess={(result) => {
-                onImported(result);
-                onOpenChange(false);
-              }}
-            />
-          </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
