@@ -20,6 +20,7 @@ The UI loads network config documents from the API and renders most domain behav
 | `event_schema` | Stored in action metadata; not yet rendered as a full event UI |
 | JSON Schema `$ref` | Expanded before rendering through `resolveNetworkRefs()` / `resolveRefs()` |
 | property `private: true` | Hidden from public cards and map markers |
+| `x-import-aliases`, `x-import-paths`, `x-wallet-aliases` | Extra field names the import mapper can use when matching wallet or DigiLocker payloads into the form |
 
 ## Forms
 
@@ -48,3 +49,12 @@ The component does not need domain-specific code if it receives:
 Action modals render `requirement_schema` dynamically. When an action has no requirement schema, the UI can submit an empty requirements object.
 
 `HomePage` walks every entry in `network.actions` and matches `interactions` by `from_domain` and `to_domain`, so the list UI can render any configured action type without a dedicated `connect` code path.
+
+## Import Mapping
+
+Credential import does not render from the network schema directly, but it does depend on schema metadata when mapping imported values into a form.
+
+- every schema property is matched against its raw property name plus normalized `snake_case`, `camelCase`, and alphanumeric-only variants
+- optional `x-import-aliases`, `x-import-paths`, and `x-wallet-aliases` extensions let a project describe provider-specific field names without changing UI code
+- number and integer fields are coerced from strings when the schema expects a numeric value
+- unmatched imported fields are retained as skipped values for user feedback instead of silently failing

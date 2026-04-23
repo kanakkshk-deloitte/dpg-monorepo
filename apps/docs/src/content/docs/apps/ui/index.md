@@ -17,6 +17,7 @@ The important split is:
 | Page | Use it for |
 |------|------------|
 | [Running The UI](/apps/ui/running) | Local setup, env variables, and backend routes the UI expects |
+| [Credential Import And Wallets](/apps/ui/credential-import-and-wallets) | Provider-agnostic credential import flow, wallet providers, DigiLocker support, and schema mapping |
 | [Hardcoded Parts](/apps/ui/hardcoded-parts) | Product-specific assumptions that are not generic DPG behavior |
 | [Schema-Generated Parts](/apps/ui/schema-generated-parts) | What is loaded and rendered from the network schema |
 | [Components](/apps/ui/components) | Layout, cards, forms, actions, auth, and map components |
@@ -50,3 +51,12 @@ The important split is:
 `/profile/new`, `/profile/:id/edit`, and `/my-actions` are protected by `RequireAuth`.
 
 The `?network=<name>` query param selects the active network when multiple configured networks are available. The `?as=<domain>` query param on `/` is a runtime override for the current browsing role. The `?domain=<domain>` param controls the selected target domain. The `?view=list|map` param controls the view mode.
+
+## Credential Import
+
+The profile form now supports credential import through a provider-agnostic wallet registry.
+
+- providers register themselves at startup through `engine/wallet/wallet-registry.ts`
+- the profile form only checks whether any provider is configured before showing the `Import Credentials` action
+- imported payloads are mapped into the active schema with alias-aware matching, so one provider format does not need one-off form code per domain
+- the current implementation ships with Dhiway Wallet and DigiLocker providers as adoption examples, but the UI is intentionally designed so they can be replaced or extended

@@ -12,6 +12,8 @@ head: []
 | `engine/schema/resolve-schema.ts` | Resolves local, relative, and remote `$ref` values and flattens `allOf` |
 | `engine/schema/schema-privacy.ts` | Filters schemas/data by the `private: true` convention |
 | `engine/map/map-registry.ts` | Registers/selects map providers |
+| `engine/wallet/wallet-registry.ts` | Registers/selects credential import providers and filters them by runtime configuration |
+| `engine/wallet/types.ts` | Shared provider contract for import context, provider components, and import results |
 | `engine/types.ts` | UI-side network, action, map, and filter types |
 
 ## API Utilities
@@ -26,6 +28,9 @@ head: []
 | `lib/auth-api.ts` | Unified OTP, session, and sign-out calls |
 | `lib/auth-token.ts` | Token storage helpers |
 | `lib/item-utils.ts` | Item geocoding/extraction helpers |
+| `lib/import-mapping.ts` | Flattens imported payloads, generates candidate aliases, and merges values into the active JSON Schema form |
+| `lib/wallet-api.ts` | Dhiway Wallet credential import client and payload transformer |
+| `lib/digilocker-api.ts` | DigiLocker agent client and credential subject transformer |
 | `lib/utils.ts` | Shared UI utility helpers |
 
 ## Required Packages
@@ -49,3 +54,9 @@ For equivalent schema decoding and display behavior, keep these package categori
 | `schemas` workspace package | Shared schema package dependency |
 
 If you do not reuse the existing visual components, you still need a JSON Schema renderer, a `$ref` resolver, privacy filtering, an API client, and map/geocoding utilities for equivalent behavior.
+
+For equivalent credential import behavior, you also need:
+
+- a provider registry so one integration does not leak into all form code
+- a mapping layer that can translate external credential payloads into schema property names
+- pluggable provider clients for wallet, DigiLocker, or any future credential source

@@ -60,4 +60,5 @@ The structure is intentional:
 - runnable setup second
 - schema design third
 - API behavior fourth
-- internals last
+- internals fifth
+- service integrations last

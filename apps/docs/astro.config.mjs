@@ -101,6 +101,10 @@ export default defineConfig({
           items: [
             { label: 'UI Overview', slug: 'apps/ui' },
             { label: 'Running The UI', slug: 'apps/ui/running' },
+            {
+              label: 'Credential Import And Wallets',
+              slug: 'apps/ui/credential-import-and-wallets',
+            },
             { label: 'Hardcoded Parts', slug: 'apps/ui/hardcoded-parts' },
             {
               label: 'Schema-Generated Parts',
@@ -125,6 +129,28 @@ export default defineConfig({
             {
               label: 'Notification Package',
               slug: 'packages/notification-package',
+            },
+          ],
+        },
+        {
+          label: 'Services',
+          items: [
+            { label: 'Services Overview', slug: 'services/overview' },
+            {
+              label: 'Notification Service',
+              slug: 'services/notification-service',
+            },
+            {
+              label: 'Authentication Service',
+              slug: 'services/authentication-service',
+            },
+            {
+              label: 'Wallet Service',
+              slug: 'services/wallet-service',
+            },
+            {
+              label: 'DigiLocker Service',
+              slug: 'services/digilocker-service',
             },
           ],
         },
