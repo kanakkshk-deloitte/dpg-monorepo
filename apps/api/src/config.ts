@@ -6,6 +6,7 @@ export const {
   api,
   auth,
   databases,
+  matchScore,
   notification,
   networkRuntime,
   schemaRegistry,
@@ -32,6 +33,18 @@ export const authConfig = {
       ? `${apiConfig.domain}:${apiConfig.port}/api/auth`
       : `${apiConfig.domain}/api/auth`,
   create_test_otp: auth.CREATE_TEST_OTP,
+};
+
+export const matchScoreConfig = {
+  provider: matchScore.MATCH_SCORE_PROVIDER,
+  dpg_scoring: {
+    endpoint: matchScore.DPG_SCORING_ENDPOINT,
+    key_id: matchScore.DPG_SCORING_KEY_ID,
+    secret: matchScore.DPG_SCORING_SECRET,
+    path: matchScore.DPG_SCORING_PATH,
+    version: matchScore.DPG_SCORING_VERSION,
+    prompt_version: matchScore.DPG_SCORING_PROMPT_VERSION,
+  },
 };
 
 export function getCurrentApiBaseUrl(): string {

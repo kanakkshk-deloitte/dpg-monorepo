@@ -1,0 +1,28 @@
+import z from 'zod';
+import { ItemSnapshotSchema } from './item_schemas';
+
+export const MatchScoreRequestSchema = z.object({
+  itemA: ItemSnapshotSchema,
+  itemB: ItemSnapshotSchema,
+});
+
+export const MatchScoreResponseSchema = z.object({
+  provider: z.string().min(1),
+  score: z.number().finite().optional(),
+  band: z.string().min(1).optional(),
+  confidence: z.number().finite().optional(),
+  version: z.string().min(1).optional(),
+  prompt_version: z.string().min(1).optional(),
+  model_provider: z.string().min(1).optional(),
+  model: z.string().min(1).optional(),
+  reasoning: z.string().min(1).optional(),
+  signals: z
+    .object({
+      name: z.string().min(1),
+      impact: z.string().min(1),
+      summary: z.string().min(1),
+    })
+    .array()
+    .optional(),
+  raw_response: z.unknown(),
+});
