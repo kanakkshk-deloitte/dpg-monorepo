@@ -3,6 +3,7 @@ import {
   AuthSecretsSchema,
   DatabaseSecretsSchema,
   InstanceSecretsSchema,
+  MatchScoreSecretsSchema,
   NetworkRuntimeSecretsSchema,
   NotificationSecretsSchema,
   OptionalSchemaRegistrySecretsSchema,
@@ -14,6 +15,7 @@ export function loadEnv() {
   const auth = AuthSecretsSchema.parse(process.env);
   const databases = DatabaseSecretsSchema.parse(process.env);
   const notification = NotificationSecretsSchema.parse(process.env);
+  const matchScore = MatchScoreSecretsSchema.parse(process.env);
   const networkRuntime = NetworkRuntimeSecretsSchema.parse(process.env);
   const schemaRegistry = OptionalSchemaRegistrySecretsSchema.parse(process.env);
   return {
@@ -22,6 +24,7 @@ export function loadEnv() {
     auth,
     databases,
     notification,
+    matchScore,
     networkRuntime,
     schemaRegistry,
   };

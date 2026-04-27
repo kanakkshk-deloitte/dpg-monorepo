@@ -29,6 +29,16 @@ export const NotificationSecretsSchema = z.object({
   SMS_TEMPLATE_ID: z.string().optional(),
 });
 
+export const MatchScoreSecretsSchema = z.object({
+  MATCH_SCORE_PROVIDER: z.enum(['dpg_scoring']).optional(),
+  DPG_SCORING_ENDPOINT: z.string().optional(),
+  DPG_SCORING_KEY_ID: z.string().optional(),
+  DPG_SCORING_SECRET: z.string().optional(),
+  DPG_SCORING_PATH: z.string().optional(),
+  DPG_SCORING_VERSION: z.string().optional(),
+  DPG_SCORING_PROMPT_VERSION: z.string().optional(),
+});
+
 export const SchemaRegistrySecretsSchema = z.object({
   SCHEMA_REGISTRY_URL: z.string().min(1),
 });

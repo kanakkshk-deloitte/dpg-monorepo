@@ -3,6 +3,11 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
 export const ItemSelectSchema = createSelectSchema(items);
 export const ItemInsertSchema = createInsertSchema(items);
+export const ItemSnapshotSchema = ItemSelectSchema.omit({
+  created_by: true,
+  created_at: true,
+  updated_at: true,
+});
 
 export const CreateItemBodySchema = ItemInsertSchema.omit({
   created_by: true,
