@@ -11,6 +11,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardFieldsFromSchema } from './card-field';
 import { ActionButton } from './action-button';
+import { MatchScoreButton } from '@/components/match-score';
+import type { Item } from '@/lib/item-api';
+import type { MatchScoreResult } from '@/lib/match-score-api';
 
 interface DomainCardProps {
   schema: RJSFSchema;
@@ -21,6 +24,14 @@ interface DomainCardProps {
   onAction?: (type: string, schema: DotActionSchema) => void;
   loading?: boolean;
   onClick?: () => void;
+  // Match score props
+  localItem?: Item | null;
+  networkItem?: Item;
+  matchScore?: MatchScoreResult | null;
+  matchScoreLoading?: boolean;
+  matchScoreError?: Error | null;
+  onCalculateMatch?: () => void;
+  onViewMatchDetails?: () => void;
 }
 
 export function DomainCard({
@@ -32,6 +43,13 @@ export function DomainCard({
   onAction,
   loading = false,
   onClick,
+  localItem,
+  networkItem,
+  matchScore,
+  matchScoreLoading,
+  matchScoreError,
+  onCalculateMatch,
+  onViewMatchDetails,
 }: DomainCardProps) {
   if (loading) {
     return (
@@ -66,20 +84,32 @@ export function DomainCard({
       <CardContent className="flex-1">
         <CardFieldsFromSchema schema={schema} data={data} />
       </CardContent>
-      {actions.length > 0 && onAction && (
+      {(actions.length > 0 && onAction) || (networkItem && onCalculateMatch) ? (
         <CardFooter className="flex flex-wrap gap-2">
+          {networkItem && onCalculateMatch && (
+            <MatchScoreButton
+              localItem={localItem ?? null}
+              networkItem={networkItem}
+              score={matchScore ?? null}
+              isLoading={matchScoreLoading ?? false}
+              error={matchScoreError ?? null}
+              onCalculate={onCalculateMatch}
+              onViewDetails={onViewMatchDetails}
+              disabled={!localItem}
+            />
+          )}
           {actions.map((action) => (
             <ActionButton
               key={action.action_type}
               actionType={action.action_type}
               actionSchema={action}
               onAction={(type, schema) => {
-                onAction(type, schema);
+                onAction?.(type, schema);
               }}
             />
           ))}
         </CardFooter>
-      )}
+      ) : null}
     </Card>
   );
 }
