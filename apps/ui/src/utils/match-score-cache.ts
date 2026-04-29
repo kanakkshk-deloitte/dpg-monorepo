@@ -98,7 +98,10 @@ export function getMatchScoreBand(score: number): {
   bgColor: string;
   textColor: string;
 } {
-  if (score >= 0.85) {
+  // Normalize 0-10 score to 0-1 range for percentage calculations
+  const normalizedScore = score / 10;
+
+  if (normalizedScore >= 0.85) {
     return {
       label: 'Excellent Match',
       color: 'emerald',
@@ -106,7 +109,7 @@ export function getMatchScoreBand(score: number): {
       textColor: 'text-white',
     };
   }
-  if (score >= 0.70) {
+  if (normalizedScore >= 0.70) {
     return {
       label: 'Good Match',
       color: 'blue',
@@ -114,7 +117,7 @@ export function getMatchScoreBand(score: number): {
       textColor: 'text-white',
     };
   }
-  if (score >= 0.50) {
+  if (normalizedScore >= 0.50) {
     return {
       label: 'Moderate Match',
       color: 'amber',
@@ -131,5 +134,6 @@ export function getMatchScoreBand(score: number): {
 }
 
 export function formatScorePercentage(score: number): string {
-  return `${Math.round(score * 100)}%`;
+  // Backend returns scores on 0-10 scale, convert to percentage
+  return `${Math.round((score / 10) * 100)}%`;
 }
