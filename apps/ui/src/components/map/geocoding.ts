@@ -1,10 +1,38 @@
-interface GeoCoordinate {
+export interface GeoCoordinate {
   lat: number;
   lng: number;
 }
 
+declare global {
+  interface Window {
+    __dpgGoogleMapsInit?: () => void;
+    google?: GoogleMapsGlobal;
+  }
+}
+
+interface GoogleMapsGeocoderResult {
+  geometry: {
+    location: {
+      lat: () => number;
+      lng: () => number;
+    };
+  };
+}
+
+interface GoogleMapsGeocoder {
+  geocode: (request: { address: string }) => Promise<{ results: GoogleMapsGeocoderResult[] }>;
+}
+
+interface GoogleMapsGlobal {
+  maps?: {
+    Geocoder?: new () => GoogleMapsGeocoder;
+  };
+}
+
 const pincodeCache = new Map<string, GeoCoordinate | null>();
 const addressCache = new Map<string, GeoCoordinate | null>();
+const googleAddressCache = new Map<string, GeoCoordinate | null>();
+let googleMapsScriptPromise: Promise<void> | null = null;
 
 // Rate limiting for Nominatim (1 request per second max)
 let lastRequestTime = 0;
@@ -129,6 +157,85 @@ export async function geocodeAddress(
   }
 }
 
+/**
+ * Geocodes a free-form address with Google Geocoding API when a browser API key is configured.
+ */
+export async function geocodeAddressWithGoogle(address: string): Promise<GeoCoordinate | null> {
+  if (!address || typeof address !== 'string') return null;
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (!apiKey || typeof window === 'undefined') return null;
+
+  const key = address.trim();
+  if (googleAddressCache.has(key)) return googleAddressCache.get(key)!;
+
+  try {
+    await loadGoogleMapsScript(apiKey);
+    const result = await geocodeWithGoogleMaps(key);
+
+    googleAddressCache.set(key, result);
+    return result;
+  } catch {
+    googleAddressCache.set(key, null);
+    return null;
+  }
+}
+
+function hasGoogleGeocoder(): boolean {
+  return typeof window.google?.maps?.Geocoder === 'function';
+}
+
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  if (hasGoogleGeocoder()) return Promise.resolve();
+  if (googleMapsScriptPromise) return googleMapsScriptPromise;
+
+  googleMapsScriptPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>('script[data-dpg-google-maps="true"]');
+
+    window.__dpgGoogleMapsInit = () => {
+      resolve();
+      window.__dpgGoogleMapsInit = undefined;
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    const url = new URL('https://maps.googleapis.com/maps/api/js');
+    url.searchParams.set('key', apiKey);
+    url.searchParams.set('callback', '__dpgGoogleMapsInit');
+    url.searchParams.set('loading', 'async');
+
+    script.src = url.toString();
+    script.async = true;
+    script.defer = true;
+    script.dataset.dpgGoogleMaps = 'true';
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsScriptPromise;
+}
+
+function geocodeWithGoogleMaps(address: string): Promise<GeoCoordinate | null> {
+  if (!hasGoogleGeocoder()) return Promise.resolve(null);
+
+  const Geocoder = window.google?.maps?.Geocoder;
+  if (!Geocoder) return Promise.resolve(null);
+
+  const geocoder = new Geocoder();
+  return geocoder
+    .geocode({ address })
+    .then(({ results }) => {
+      const location = results[0]?.geometry.location;
+      return location ? { lat: location.lat(), lng: location.lng() } : null;
+    })
+    .catch(() => null);
+}
+
 async function geocodeFromNominatim(
   address: string,
   format: 'full' | 'city-only'
@@ -170,4 +277,5 @@ async function geocodeFromNominatim(
 export function clearGeocodingCache(): void {
   pincodeCache.clear();
   addressCache.clear();
+  googleAddressCache.clear();
 }

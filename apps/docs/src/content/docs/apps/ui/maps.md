@@ -13,6 +13,7 @@ head: []
 | `leaflet` | Map engine |
 | `react-leaflet` | React bindings for Leaflet |
 | `@types/leaflet` | TypeScript types |
+| `@vis.gl/react-google-maps` | Google Maps React bindings |
 | `lucide-react` | Optional marker/control icons |
 
 ## Provider Registry
@@ -29,6 +30,13 @@ The active provider is selected by:
 
 ```bash
 VITE_MAP_PROVIDER="leaflet"
+```
+
+Use Google Maps by setting:
+
+```bash
+VITE_MAP_PROVIDER="google-maps"
+VITE_GOOGLE_MAPS_API_KEY="your-browser-restricted-key"
 ```
 
 `components/map/providers/index.ts` imports providers so registration runs at startup.
@@ -62,8 +70,11 @@ Exact coordinates produce exact markers. Postal and address fields produce geoco
 
 - `geocodePincode()`
 - `geocodeAddress()`
+- `geocodeAddressWithGoogle()`
 
 `VITE_GEOCODING_API_URL` overrides the pincode geocoding endpoint. The default is `api.postalpincode.in`.
+
+Profile create/update uses `VITE_GOOGLE_MAPS_API_KEY` for client-side location/address geocoding when configured, then falls back to the existing non-Google geocoding path. Restrict the Google key by HTTP referrer in Google Cloud because it is exposed to the browser.
 
 ## Custom Provider
 
@@ -75,4 +86,4 @@ To add a map provider:
 4. Import the provider from `components/map/providers/index.ts`.
 5. Set `VITE_MAP_PROVIDER=your-key`.
 
-The existing `google-maps-provider.tsx` is a slot for this pattern, but Leaflet is the complete default provider.
+Leaflet remains the default provider. Google Maps is registered at startup and becomes active when `VITE_MAP_PROVIDER=google-maps`.
