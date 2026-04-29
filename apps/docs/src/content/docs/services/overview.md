@@ -24,6 +24,7 @@ For this project, a service belongs in this section when all of the following ar
 | Authentication service | Authentication, organizations, authorization hooks, and API auth features | Better Auth | Yes |
 | Wallet service | Verifies identifiers and returns user-linked credentials for import | Dhiway Wallet | Yes |
 | DigiLocker pull service | Pulls credentials from DigiLocker through an external flow | Dhiway DigiLocker integration | Yes |
+| Match score service | Compares two items and returns a score, band, reasoning, and match signals | DPG Scoring | Yes |
 
 ## Relationship To DPG Core
 

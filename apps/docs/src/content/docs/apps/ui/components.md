@@ -59,6 +59,16 @@ head: []
 | `LoginPage` | `pages/auth/login-page.tsx` | Login/signup entry point |
 | `OtpPage` | `pages/auth/otp-page.tsx` | OTP verification step |
 
+## Match Score
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `MatchScoreCard` | `components/match-score/match-score-card.tsx` | Wraps `DomainCard` with match score state and wires the modal |
+| `MatchScoreContainer` | `components/match-score/match-score-container.tsx` | Standalone button + modal container for match scores |
+| `MatchScoreButton` | `components/match-score/match-score-button.tsx` | Calculate / loading / error / score badge trigger |
+| `MatchScoreBadge` | `components/match-score/match-score-badge.tsx` | Colored badge showing score percentage with tooltip preview |
+| `MatchScoreModal` | `components/match-score/match-score-modal.tsx` | Detailed score dialog with progress bar, signals, AI reasoning, and actions |
+
 ## Maps
 
 | Component | File | Purpose |

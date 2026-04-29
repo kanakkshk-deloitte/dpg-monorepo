@@ -130,6 +130,10 @@ export default defineConfig({
               label: 'Notification Package',
               slug: 'packages/notification-package',
             },
+            {
+              label: 'Match Score Package',
+              slug: 'packages/match-score-package',
+            },
           ],
         },
         {
@@ -151,6 +155,10 @@ export default defineConfig({
             {
               label: 'DigiLocker Service',
               slug: 'services/digilocker-service',
+            },
+            {
+              label: 'Match Score Service',
+              slug: 'services/match-score-service',
             },
           ],
         },

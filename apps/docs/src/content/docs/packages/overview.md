@@ -19,6 +19,7 @@ Most readers should start with the higher-level guides first:
 - `packages/config`: env schemas, allowed-origin helpers, and network runtime helpers
 - `packages/database`: Drizzle ref tables, partition helpers, and base SQL scripts
 - `packages/notification`: HMAC notification client, auth header helpers, and provider-facing types
+- `packages/match_score`: HMAC match score client, provider-specific clients, and scoring request/response types
 - `packages/schemas`: Zod export, API schemas, and schema fetching
 
 Checked-in example network configs, Postman collections, and API walkthroughs live under `examples/`.
@@ -42,3 +43,4 @@ Use the dedicated pages for package-level usage patterns:
 - `Schemas Package`
 - `Auth Package`
 - `Notification Package`
+- `Match Score Package`

@@ -1,6 +1,7 @@
 import { Star, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MatchScoreResult } from '@/lib/match-score-api';
+import { formatScorePercentage } from '@/utils/match-score-cache';
 import {
   Tooltip,
   TooltipContent,
@@ -55,10 +56,6 @@ function getScoreStyles(score: number) {
     borderColor: 'border-rose-500',
     icon: AlertCircle,
   };
-}
-
-function formatScorePercentage(score: number): string {
-  return `${Math.round(score * 100)}%`;
 }
 
 export function MatchScoreBadge({
