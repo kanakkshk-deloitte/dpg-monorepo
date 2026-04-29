@@ -15,6 +15,7 @@ import { CardGrid } from '@/components/cards/card-grid';
 import { DomainCard } from '@/components/cards/domain-card';
 import { ActionHandler } from '@/components/actions/action-handler';
 import { MapView } from '@/components/map/map-container';
+import { MatchScoreCard } from '@/components/match-score';
 import '@/components/map/providers';
 import { fetchItems, performAction, type Item } from '@/lib/item-api';
 import { fetchNetworkConfigs, fetchNetworkConfig, fetchNetworkItems } from '@/lib/network-api';
@@ -581,18 +582,39 @@ export function HomePage() {
 
                 return (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {allFlatItems.map(({ item, schema, domainActions, domainDescription }) => (
-                      <DomainCard
-                        key={item.id}
-                        schema={schema!}
-                        schemaDescription={domainDescription}
-                        data={item.data}
-                        actions={domainActions}
-                        onAction={(type, actionSchema) =>
-                          triggerAction(type, actionSchema, item.id)
-                        }
-                      />
-                    ))}
+                    {allFlatItems.map(({ item, schema, domainActions, domainDescription }) => {
+                      // Find the full Item object from domainItems
+                      const fullItem = Object.values(domainItems)
+                        .flat()
+                        .find((i) => i.item_id === item.id);
+                      
+                      return (
+                        <MatchScoreCard
+                          key={item.id}
+                          schema={schema!}
+                          schemaDescription={domainDescription}
+                          data={item.data}
+                          actions={domainActions}
+                          onAction={(type, actionSchema) =>
+                            triggerAction(type, actionSchema, item.id)
+                          }
+                          localItem={myItem}
+                          networkItem={fullItem || {
+                            item_id: item.id,
+                            item_network: network?.name || '',
+                            item_domain: selectedDomain || '',
+                            item_type: 'profile',
+                            item_instance_url: null,
+                            item_schema_url: null,
+                            item_state: item.data,
+                            item_latitude: null,
+                            item_longitude: null,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 );
               })()
@@ -603,6 +625,7 @@ export function HomePage() {
                 schemaName={selectedDomain}
                 schemaDescription={currentDomainLabel}
                 items={filteredDomainItems[selectedDomain] ?? []}
+                fullItems={domainItems[selectedDomain] ?? []}
                 actions={actions}
                 onAction={(itemId, _type, actionSchema) => {
                   triggerAction(_type, actionSchema, itemId);
@@ -613,6 +636,9 @@ export function HomePage() {
                     ? `No results for "${search}"`
                     : `No ${currentDomainLabel ?? 'items'} found`
                 }
+                localItem={myItem}
+                networkName={network?.name}
+                selectedDomain={selectedDomain}
               />
             )
           }

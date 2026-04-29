@@ -1,0 +1,118 @@
+import * as React from 'react';
+import type { RJSFSchema } from '@rjsf/utils';
+import type { DotActionSchema } from '@/engine/types';
+import { DomainCard } from '@/components/cards/domain-card';
+import { MatchScoreModal } from './match-score-modal';
+import { useMatchScore } from '@/hooks/use-match-score';
+import type { Item } from '@/lib/item-api';
+
+export interface MatchScoreCardProps {
+  schema: RJSFSchema;
+  schemaName?: string;
+  schemaDescription?: string;
+  data: Record<string, unknown>;
+  actions?: DotActionSchema[];
+  onAction?: (type: string, schema: DotActionSchema) => void;
+  loading?: boolean;
+  onClick?: () => void;
+  localItem: Item | null;
+  networkItem: Item;
+}
+
+export function MatchScoreCard({
+  schema,
+  schemaName,
+  schemaDescription,
+  data,
+  actions = [],
+  onAction,
+  loading = false,
+  onClick,
+  localItem,
+  networkItem,
+}: MatchScoreCardProps) {
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  
+  const {
+    score,
+    isLoading: matchScoreLoading,
+    error: matchScoreError,
+    calculate,
+    recalculate,
+  } = useMatchScore({
+    localItem,
+    networkItem,
+  });
+
+  const handleCalculate = React.useCallback(() => {
+    calculate();
+  }, [calculate]);
+
+  const handleViewDetails = React.useCallback(() => {
+    setIsModalOpen(true);
+  }, []);
+
+  const handleCloseModal = React.useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  const handleRecalculate = React.useCallback(() => {
+    recalculate();
+  }, [recalculate]);
+
+  const handleProceed = React.useCallback(() => {
+    setIsModalOpen(false);
+    // Trigger the first action if available
+    if (actions.length > 0 && onAction) {
+      onAction(actions[0].action_type, actions[0]);
+    }
+  }, [actions, onAction]);
+
+  // Get title for items
+  const titleKey = findTitleField(schema);
+  const localItemName = localItem 
+    ? (localItem.item_state[titleKey ?? 'name'] as string) ?? 'Your Profile'
+    : 'Your Profile';
+  const networkItemName = (data[titleKey ?? 'name'] as string) ?? 'Target Profile';
+
+  return (
+    <>
+      <DomainCard
+        schema={schema}
+        schemaName={schemaName}
+        schemaDescription={schemaDescription}
+        data={data}
+        actions={actions}
+        onAction={onAction}
+        loading={loading}
+        onClick={onClick}
+        localItem={localItem}
+        networkItem={networkItem}
+        matchScore={score}
+        matchScoreLoading={matchScoreLoading}
+        matchScoreError={matchScoreError}
+        onCalculateMatch={handleCalculate}
+        onViewMatchDetails={handleViewDetails}
+      />
+      <MatchScoreModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        score={score}
+        isLoading={matchScoreLoading}
+        localItemName={localItemName}
+        networkItemName={networkItemName}
+        onRecalculate={handleRecalculate}
+        onProceed={handleProceed}
+      />
+    </>
+  );
+}
+
+function findTitleField(schema: RJSFSchema): string | null {
+  if (!schema.properties) return null;
+  const candidates = ['name', 'full_name', 'title', 'provider_id', 'learner_id', 'student_id'];
+  for (const key of candidates) {
+    if (key in schema.properties) return key;
+  }
+  return Object.keys(schema.properties)[0] ?? null;
+}
