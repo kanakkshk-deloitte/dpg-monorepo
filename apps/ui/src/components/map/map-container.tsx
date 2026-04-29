@@ -3,7 +3,8 @@ import type { RJSFSchema } from '@rjsf/utils';
 import type { MapMarker } from '@/engine/types';
 import { filterDataBySchema, getPublicFieldKeys } from '@/engine/schema/schema-privacy';
 import { getActiveMapProvider } from '@/engine/map/map-registry';
-import { geocodePincode, geocodeAddress } from './geocoding';
+import { extractAddressFromForm, extractPincodeFromForm, normalizeFieldName } from '@/lib/item-utils';
+import { geocodePincode, geocodeAddress, geocodeAddressWithGoogle } from './geocoding';
 
 interface MapViewProps {
   schema: RJSFSchema;
@@ -11,65 +12,6 @@ interface MapViewProps {
   onMarkerClick?: (id: string) => void;
   center?: [number, number];
   zoom?: number;
-}
-
-// Location field detection configuration
-const LOCATION_FIELDS = {
-  exact: ['item_latitude', 'item_longitude', 'lat', 'latitude', 'lng', 'lon', 'longitude'],
-  postal: ['pincode', 'postal_code', 'zip', 'zipcode'],
-  full: ['location', 'address', 'street_address', 'street', 'full_address', 'house_number', 'building'],
-  city: ['city', 'preferred_city', 'town', 'district', 'locality', 'village', 'place'],
-  region: ['state', 'province', 'region', 'county'],
-  country: ['country', 'nation'],
-};
-
-// Build address string from available fields
-function buildAddressString(data: Record<string, unknown>): { address: string; source: string } | null {
-  const location = findFirstValue(data, ['location']);
-  if (location) {
-    return { address: location, source: 'location' };
-  }
-
-  const parts: string[] = [];
-  const sources: string[] = [];
-
-  // Try to build full address: City, State, Country
-  const city = findFirstValue(data, LOCATION_FIELDS.city);
-  const region = findFirstValue(data, LOCATION_FIELDS.region);
-  const country = findFirstValue(data, LOCATION_FIELDS.country);
-
-  if (city) {
-    parts.push(city);
-    sources.push('city');
-  }
-  if (region) {
-    parts.push(region);
-    sources.push('state');
-  }
-  if (country) {
-    parts.push(country);
-    sources.push('country');
-  }
-
-  if (parts.length > 0) {
-    return { address: parts.join(', '), source: sources.join(', ') };
-  }
-
-  // Fallback to address/street field
-  const address = findFirstValue(data, LOCATION_FIELDS.full);
-  if (address) {
-    return { address, source: 'address' };
-  }
-
-  return null;
-}
-
-function findFirstValue(data: Record<string, unknown>, keys: string[]): string | null {
-  for (const key of keys) {
-    const val = data[key];
-    if (typeof val === 'string' && val.trim()) return val.trim();
-  }
-  return null;
 }
 
 const INDIA_CENTER: [number, number] = [20.5937, 78.9629];
@@ -106,7 +48,7 @@ export function MapView({
 
           // 2. Fallback to pincode geocoding
           if (lat === null || lng === null) {
-            const pincode = findFirstValue(item.data, LOCATION_FIELDS.postal);
+            const pincode = extractPincodeFromForm(item.data, '');
             if (pincode) {
               const geo = await geocodePincode(pincode);
               if (geo) {
@@ -120,18 +62,17 @@ export function MapView({
 
           // 3. Fallback to address geocoding (full address format)
           if (lat === null || lng === null) {
-            const addressInfo = buildAddressString(item.data);
-            if (addressInfo) {
-              // Try full address format first
-              const geo = await geocodeAddress(addressInfo.address, 'full');
+            const address = extractAddressFromForm(item.data);
+            if (address) {
+              const geo = await geocodeAddressWithGoogle(address) ?? await geocodeAddress(address, 'full');
               if (geo) {
                 lat = geo.lat;
                 lng = geo.lng;
                 precision = 'geocoded_full_address';
-                geocodedFrom = addressInfo.source;
+                geocodedFrom = 'location';
               } else {
                 // Fallback to city-only format
-                const cityGeo = await geocodeAddress(addressInfo.address, 'city-only');
+                const cityGeo = await geocodeAddress(address, 'city-only');
                 if (cityGeo) {
                   lat = cityGeo.lat;
                   lng = cityGeo.lng;
@@ -215,6 +156,7 @@ function resolveCoordinate(
   data: Record<string, unknown>,
   ...keys: string[]
 ): number | null {
+  const normalizedKeys = keys.map(normalizeFieldName);
   for (const key of keys) {
     const val = data[key];
     if (typeof val === 'number') return val;
@@ -223,6 +165,16 @@ function resolveCoordinate(
       if (!isNaN(num)) return num;
     }
   }
+
+  for (const [key, val] of Object.entries(data)) {
+    if (!normalizedKeys.includes(normalizeFieldName(key))) continue;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const num = parseFloat(val);
+      if (!isNaN(num)) return num;
+    }
+  }
+
   return null;
 }
 
