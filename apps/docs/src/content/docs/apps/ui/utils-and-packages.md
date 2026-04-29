@@ -31,7 +31,15 @@ head: []
 | `lib/import-mapping.ts` | Flattens imported payloads, generates candidate aliases, and merges values into the active JSON Schema form |
 | `lib/wallet-api.ts` | Dhiway Wallet credential import client and payload transformer |
 | `lib/digilocker-api.ts` | DigiLocker agent client and credential subject transformer |
+| `lib/match-score-api.ts` | Match score API client, item-to-snapshot helper, and request/response types |
 | `lib/utils.ts` | Shared UI utility helpers |
+
+## Match Score Utilities
+
+| File | Purpose |
+|------|---------|
+| `utils/match-score-cache.ts` | `localStorage` cache with 24-hour TTL, cache key generation, and score band formatting helpers |
+| `hooks/use-match-score.ts` | React hook that orchestrates cache lookup, API call, recalculate, and error state |
 
 ## Required Packages
 
