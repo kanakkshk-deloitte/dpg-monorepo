@@ -17,6 +17,35 @@ export type FetchSchemaOptions = {
   resolveRefs?: boolean;
 };
 
+export class SchemaFetchError extends Error {
+  public readonly url: string;
+  public readonly status?: number;
+  public readonly statusText?: string;
+
+  constructor(input: {
+    url: string;
+    status?: number;
+    statusText?: string;
+    cause?: unknown;
+  }) {
+    const message = input.status
+      ? [
+          `Failed to fetch schema from ${input.url}:`,
+          input.status,
+          input.statusText,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : `Failed to fetch schema from ${input.url}`;
+
+    super(message, { cause: input.cause });
+    this.name = 'SchemaFetchError';
+    this.url = input.url;
+    this.status = input.status;
+    this.statusText = input.statusText;
+  }
+}
+
 export class fetchSchema {
   public readonly url: string;
   public readonly ready: Promise<JsonValue | unknown>;
@@ -55,15 +84,28 @@ export class fetchSchema {
       return cachedDocument;
     }
 
-    const pendingDocument = this.fetchFn(normalizedUrl).then(async (response) => {
+    const pendingDocument = (async () => {
+      let response: Response;
+
+      try {
+        response = await this.fetchFn(normalizedUrl);
+      } catch (err) {
+        throw new SchemaFetchError({
+          url: normalizedUrl,
+          cause: err,
+        });
+      }
+
       if (!response.ok) {
-        throw new Error(
-          `Failed to fetch schema from ${normalizedUrl}: ${response.status} ${response.statusText}`,
-        );
+        throw new SchemaFetchError({
+          url: normalizedUrl,
+          status: response.status,
+          statusText: response.statusText,
+        });
       }
 
       return (await response.json()) as JsonValue | unknown;
-    });
+    })();
 
     this.documentCache.set(normalizedUrl, pendingDocument);
     return pendingDocument;
