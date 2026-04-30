@@ -57,7 +57,10 @@ export async function loadNetworkConfigs(
 
 async function loadNetworkConfigFromUrl(url: string): Promise<NetworkConfig> {
   const config = await new fetchSchema(url).getSchema();
-  return NetworkConfigSchema.parse(config);
+  return {
+    ...NetworkConfigSchema.parse(config),
+    source_url: url,
+  };
 }
 
 async function loadOneHopCrossNetworkConfigs(

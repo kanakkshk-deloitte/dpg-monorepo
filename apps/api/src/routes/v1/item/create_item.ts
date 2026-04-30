@@ -16,7 +16,10 @@ import {
   replyForUnservedDomain,
 } from '../../../utils/served_domain_guard';
 import { getNetworkConfigByName } from '../../../network_configs';
-import { getOrFetchSchemaByUrl } from '../../../network_schema_cache';
+import {
+  buildNetworkItemSchemaUrl,
+  getOrFetchSchemaByUrl,
+} from '../../../network_schema_cache';
 import { apiConfig, getCurrentApiBaseUrl } from '../../../config';
 
 type CreateItemRequest = FastifyRequest<{
@@ -104,6 +107,12 @@ export const create_item_handler = async (
         body.item_domain,
         body.item_type
       );
+      itemSchemaUrl =
+        buildNetworkItemSchemaUrl({
+          networkConfig,
+          domain: body.item_domain,
+          itemType: body.item_type,
+        }) ?? itemSchemaUrl;
     }
 
     validateAgainstJsonSchema(itemSchema, body.item_state, 'item_state', {

@@ -58,6 +58,7 @@ export const NetworkConfigSchema = z.object({
   display_name: z.string().optional(),
   description: z.string().optional(),
   schema_standard: z.string().optional(),
+  source_url: z.url().optional(),
   domains: NetworkDomainSchema.array().default([]),
   instances: NetworkInstanceSchema.array().default([]),
   cross_network_origins: z

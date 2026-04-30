@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import {
   fetchSchema,
+  getDomainItemSchema,
   SchemaFetchError,
   type NetworkConfigDocument,
 } from '@dpg/schemas';
@@ -39,6 +40,8 @@ type CachedSchemaIndex = {
 type CachedSchemaResult = CachedSchemaIndexEntry & {
   schema: Record<string, unknown>;
 };
+
+const NETWORK_ITEM_SCHEMA_FRAGMENT_PREFIX = '/item_schemas';
 
 const CACHE_ROOT = join(tmpdir(), 'dpg-network-schema-cache');
 const SCHEMA_DIR = join(CACHE_ROOT, 'schemas');
@@ -133,6 +136,12 @@ async function cacheNetworkConfigSchemas(networkConfig: NetworkConfigDocument) {
           network: networkConfig.name,
           domain: domain.name,
           item_type: itemType,
+          schema_url:
+            buildNetworkItemSchemaUrl({
+              networkConfig,
+              domain: domain.name,
+              itemType,
+            }) ?? undefined,
           source: 'inline',
         },
         schema
@@ -183,13 +192,10 @@ async function cacheReferencedItemSchemas() {
       continue;
     }
 
-    let schema: Record<string, unknown>;
-
     try {
-      schema = (await new fetchSchema(entry.item_schema_url).getSchema()) as Record<
-        string,
-        unknown
-      >;
+      await getOrFetchSchemaByUrl({
+        schemaUrl: entry.item_schema_url,
+      });
     } catch (err) {
       if (err instanceof SchemaFetchError) {
         continue;
@@ -197,16 +203,6 @@ async function cacheReferencedItemSchemas() {
 
       throw err;
     }
-
-    await cacheSchemaDocument(
-      {
-        cache_key: createCacheKey(['item_schema_url', entry.item_schema_url]),
-        kind: 'item_schema_url',
-        schema_url: entry.item_schema_url,
-        source: 'remote',
-      },
-      schema
-    );
   }
 }
 
@@ -272,10 +268,15 @@ export async function getOrFetchSchemaByUrl(input: {
     return readSchemaFile(cachedEntry.file_name);
   }
 
-  const schema = (await new fetchSchema(input.schemaUrl).getSchema()) as Record<
-    string,
-    unknown
-  >;
+  const resolvedNetworkItemSchema = await resolveNetworkItemSchemaUrl(
+    input.schemaUrl
+  );
+  const schema =
+    resolvedNetworkItemSchema ??
+    ((await new fetchSchema(input.schemaUrl).getSchema()) as Record<
+      string,
+      unknown
+    >);
 
   await cacheSchemaDocument(
     {
@@ -299,6 +300,64 @@ export async function getOrFetchSchemaByUrl(input: {
   );
 
   return schema;
+}
+
+export function buildNetworkItemSchemaUrl(input: {
+  networkConfig: NetworkConfigDocument;
+  domain: string;
+  itemType: string;
+}) {
+  if (!input.networkConfig.source_url) {
+    return null;
+  }
+
+  const url = new URL(input.networkConfig.source_url);
+  url.hash = [
+    NETWORK_ITEM_SCHEMA_FRAGMENT_PREFIX,
+    encodeURIComponent(input.networkConfig.name),
+    encodeURIComponent(input.domain),
+    encodeURIComponent(input.itemType),
+  ].join('/');
+
+  return url.toString();
+}
+
+async function resolveNetworkItemSchemaUrl(schemaUrl: string) {
+  const parsedUrl = new URL(schemaUrl);
+
+  if (!parsedUrl.hash.startsWith(`#${NETWORK_ITEM_SCHEMA_FRAGMENT_PREFIX}/`)) {
+    return null;
+  }
+
+  const [network, domain, itemType] = parsedUrl.hash
+    .slice(1)
+    .split('/')
+    .slice(2)
+    .map((entry) => decodeURIComponent(entry));
+
+  if (!network || !domain || !itemType) {
+    return null;
+  }
+
+  const networkConfigs = await getNetworkConfigs();
+  const networkConfig = networkConfigs.find(
+    (entry) =>
+      entry.name === network &&
+      entry.source_url &&
+      withoutHash(entry.source_url) === withoutHash(schemaUrl)
+  );
+
+  if (!networkConfig) {
+    return null;
+  }
+
+  return getDomainItemSchema(networkConfig, domain, itemType);
+}
+
+function withoutHash(input: string) {
+  const url = new URL(input);
+  url.hash = '';
+  return url.toString();
 }
 
 export async function getConfiguredNetworkSchemas() {

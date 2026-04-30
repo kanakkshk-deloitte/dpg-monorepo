@@ -43,6 +43,7 @@ export type NetworkConfig = {
   display_name?: string;
   description?: string;
   schema_standard?: string;
+  source_url?: string;
   domains?: NetworkDomainConfig[];
   instances?: NetworkInstanceConfig[];
   cross_network_origins?: NetworkCrossOriginConfig[];
