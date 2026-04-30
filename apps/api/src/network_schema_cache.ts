@@ -2,7 +2,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { fetchSchema, type NetworkConfigDocument } from '@dpg/schemas';
+import {
+  fetchSchema,
+  SchemaFetchError,
+  type NetworkConfigDocument,
+} from '@dpg/schemas';
 import { db } from '../db/postgres/drizzle_config';
 import { items } from '@dpg/database';
 import { and, eq } from 'drizzle-orm';
@@ -179,10 +183,20 @@ async function cacheReferencedItemSchemas() {
       continue;
     }
 
-    const schema = (await new fetchSchema(entry.item_schema_url).getSchema()) as Record<
-      string,
-      unknown
-    >;
+    let schema: Record<string, unknown>;
+
+    try {
+      schema = (await new fetchSchema(entry.item_schema_url).getSchema()) as Record<
+        string,
+        unknown
+      >;
+    } catch (err) {
+      if (err instanceof SchemaFetchError) {
+        continue;
+      }
+
+      throw err;
+    }
 
     await cacheSchemaDocument(
       {
