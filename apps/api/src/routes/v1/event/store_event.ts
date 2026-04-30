@@ -1,7 +1,6 @@
 import z, {
   getActionInteraction,
   StoreEventBodySchema,
-  validateAgainstJsonSchema,
 } from '@dpg/schemas';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -13,7 +12,10 @@ import {
   isServedDomainBinding,
   replyForUnservedDomain,
 } from '../../../utils/served_domain_guard';
-import { insertActionEvent } from '../../../utils/action_event_runtime';
+import {
+  insertActionEvent,
+  validateActionEventPayload,
+} from '../../../utils/action_event_runtime';
 
 type StoreEventRequest = FastifyRequest<{
   Body: z.infer<typeof StoreEventBodySchema>;
@@ -68,17 +70,13 @@ export const store_event_handler = async (
       actionName: body.action_name,
       fromNetwork: body.source_item.item_network,
       fromDomain: body.source_item.item_domain,
+      fromItemType: body.source_item.item_type,
       toNetwork: body.target_item.item_network,
       toDomain: body.target_item.item_domain,
+      toItemType: body.target_item.item_type,
     });
 
-    if (interaction.event_schema) {
-      validateAgainstJsonSchema(
-        interaction.event_schema,
-        body.event_payload,
-        'event payload'
-      );
-    }
+    validateActionEventPayload(interaction.event_schema, body.event_payload);
   } catch (err) {
     return reply.code(400).send({
       error: 'INVALID_EVENT_REQUEST',

@@ -93,13 +93,13 @@ Compact action example:
         },
         "event_schema": {
           "type": "object",
-          "required": ["status", "message"],
+          "required": ["status", "remark"],
           "properties": {
             "status": {
               "type": "string",
               "enum": ["submitted", "shortlisted", "rejected"]
             },
-            "message": { "type": "string" }
+            "remark": { "type": "string" }
           }
         }
       }

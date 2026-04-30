@@ -4,10 +4,11 @@ import z, {
   PerformActionBodySchema,
   PerformNetworkActionBodySchema,
   StoreEventBodySchema,
+  validateAgainstJsonSchema,
 } from '@dpg/schemas';
 import { action_events, items } from '@dpg/database';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { getCurrentApiBaseUrl } from '../config';
+import { apiConfig, getCurrentApiBaseUrl } from '../config';
 
 type ActionItemRef = z.infer<typeof PerformNetworkActionBodySchema>['source_item'];
 type PerformActionTargetItemRef = z.infer<
@@ -15,7 +16,16 @@ type PerformActionTargetItemRef = z.infer<
 >['target_item'];
 export type StoredActionEvent = z.infer<typeof StoreEventBodySchema>;
 
-function normalizeInstanceUrl(url: string) {
+export type ActionEventPayloadContext = {
+  action_name: string;
+  source_item: ActionItemRef;
+  target_item: ActionItemRef;
+  requirements_snapshot: Record<string, unknown>;
+};
+
+const actionEventSystemPayloadKeys = ['status', 'remark'] as const;
+
+export function normalizeInstanceUrl(url: string) {
   const parsedUrl = new URL(url);
 
   if (
@@ -161,11 +171,89 @@ export function buildNetworkActionTargetItem(
   };
 }
 
+export function buildActionEventPayload(input: {
+  event_schema?: Record<string, unknown>;
+  action_status: string;
+  remarks?: string | null;
+  context: ActionEventPayloadContext;
+}): Record<string, unknown> {
+  return {
+    ...projectEventPayloadFromSchema(input.event_schema, input.context),
+    status: input.action_status,
+    remark: input.remarks ?? defaultActionEventRemark(input.action_status),
+  };
+}
+
+export function validateActionEventPayload(
+  eventSchema: Record<string, unknown> | undefined,
+  eventPayload: Record<string, unknown>
+) {
+  if (!eventSchema || Object.keys(eventSchema).length === 0) {
+    return;
+  }
+
+  validateAgainstJsonSchema(eventSchema, eventPayload, 'event payload', {
+    allowAdditionalProperties: apiConfig.allow_extra_schema_data,
+    ignoredKeys: actionEventSystemPayloadKeys,
+  });
+}
+
+function projectEventPayloadFromSchema(
+  eventSchema: Record<string, unknown> | undefined,
+  context: ActionEventPayloadContext
+) {
+  if (!eventSchema || Object.keys(eventSchema).length === 0) {
+    return {};
+  }
+
+  const properties = isPlainObject(eventSchema.properties)
+    ? eventSchema.properties
+    : {};
+  const payload: Record<string, unknown> = {};
+  const contextRecord = context as unknown as Record<string, unknown>;
+
+  for (const key of Object.keys(properties)) {
+    if (isActionEventSystemPayloadKey(key)) {
+      continue;
+    }
+
+    if (Object.hasOwn(contextRecord, key)) {
+      payload[key] = contextRecord[key];
+      continue;
+    }
+
+    if (Object.hasOwn(context.requirements_snapshot, key)) {
+      payload[key] = context.requirements_snapshot[key];
+    }
+  }
+
+  return payload;
+}
+
+function isActionEventSystemPayloadKey(
+  key: string
+): key is typeof actionEventSystemPayloadKeys[number] {
+  return actionEventSystemPayloadKeys.includes(
+    key as typeof actionEventSystemPayloadKeys[number]
+  );
+}
+
+function defaultActionEventRemark(actionStatus: string) {
+  return `Action status set to ${actionStatus}`;
+}
+
+function isPlainObject(input: unknown): input is Record<string, unknown> {
+  return typeof input === 'object' && input !== null && !Array.isArray(input);
+}
+
 export async function mirrorActionEventToSourceInstance(
   event: StoredActionEvent,
   log: FastifyBaseLogger
 ) {
-  if (event.source_item.item_instance_url === getCurrentApiBaseUrl()) {
+  if (
+    normalizeInstanceUrl(event.source_item.item_instance_url) ===
+    normalizeInstanceUrl(getCurrentApiBaseUrl())
+  ) {
     return;
   }
 

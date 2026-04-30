@@ -1,11 +1,16 @@
-import z, { PerformActionBodySchema } from '@dpg/schemas';
+import z, {
+  getActionInteraction,
+  PerformActionBodySchema,
+  validateAgainstJsonSchema,
+} from '@dpg/schemas';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { auth_middleware_if_enabled } from '../../../../plugins/auth/auth_middleware';
-import { getCurrentApiBaseUrl } from '../../../config';
+import { apiConfig, getCurrentApiBaseUrl } from '../../../config';
 import {
   buildNetworkActionTargetItem,
   fetchLocalItemSnapshot,
+  normalizeInstanceUrl,
 } from '../../../utils/action_event_runtime';
 import { db } from '../../../../db/postgres/drizzle_config';
 import { getNetworkConfigByName } from '../../../network_configs';
@@ -93,7 +98,8 @@ export const perform_action_handler = async (
     const allowedInstance = networkConfig.instances.some(
       (instance) =>
         instance.domain_name === targetItem.item_domain &&
-        instance.instance_url === targetItem.item_instance_url
+        normalizeInstanceUrl(instance.instance_url) ===
+          normalizeInstanceUrl(targetItem.item_instance_url)
     );
 
     if (!allowedInstance) {
@@ -102,6 +108,23 @@ export const perform_action_handler = async (
         message: 'Target item instance URL is not allowed for this network/domain',
       });
     }
+
+    const interaction = getActionInteraction(networkConfig, {
+      actionName: body.action_name,
+      fromNetwork: sourceItem.item_network,
+      fromDomain: sourceItem.item_domain,
+      fromItemType: sourceItem.item_type,
+      toNetwork: targetItem.item_network,
+      toDomain: targetItem.item_domain,
+      toItemType: targetItem.item_type,
+    });
+
+    validateAgainstJsonSchema(
+      interaction.requirement_schema,
+      body.requirements_snapshot,
+      'action requirements',
+      { allowAdditionalProperties: apiConfig.allow_extra_schema_data }
+    );
   } catch (err) {
     request.log.error(
       {
@@ -110,13 +133,13 @@ export const perform_action_handler = async (
         target_item_id: body.target_item.item_id,
         target_instance_url: body.target_item.item_instance_url,
       },
-      'Failed to validate target item instance'
+      'Failed to validate action request'
     );
 
     return reply.code(400).send({
-      error: 'INVALID_TARGET_INSTANCE',
+      error: 'INVALID_ACTION_REQUEST',
       message:
-        err instanceof Error ? err.message : 'Invalid target item instance',
+        err instanceof Error ? err.message : 'Invalid action request',
     });
   }
 

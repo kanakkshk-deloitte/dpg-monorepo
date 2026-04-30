@@ -129,10 +129,10 @@ An action defines a named business interaction and one or more allowed domain pa
         },
         "event_schema": {
           "type": "object",
-          "required": ["status", "message"],
+          "required": ["status", "remark"],
           "properties": {
             "status": { "type": "string" },
-            "message": { "type": "string" }
+            "remark": { "type": "string" }
           }
         }
       }

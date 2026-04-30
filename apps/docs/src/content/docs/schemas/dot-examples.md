@@ -33,7 +33,7 @@ Action:
 
 - `connect`
 
-The `connect` action currently allows a `student` to connect to a `tutor`. The requirement payload captures the subject and goal, and the event payload captures status and message fields.
+The `connect` action currently allows a `student` to connect to a `tutor`. The requirement payload captures the subject and goal, and the event payload captures status and remark fields.
 
 ## Blue Dot
 
@@ -59,7 +59,7 @@ Action:
 
 - `apply`
 
-The `apply` action allows a seeker to apply to a provider's job posting. The requirement payload captures job id, cover note, and optional resume URL. The event payload captures application status and message.
+The `apply` action allows a seeker to apply to a provider's job posting. The requirement payload captures job id, cover note, and optional resume URL. The event payload captures application status and remark.
 
 ## Example Payloads
 

@@ -40,8 +40,10 @@ const NetworkInstanceSchema = z.object({
 const NetworkActionInteractionSchema = z.object({
   from_network: z.string().min(1).optional(),
   from_domain: z.string().min(1),
+  from_items: z.string().min(1).array().optional().default([]),
   to_network: z.string().min(1).optional(),
   to_domain: z.string().min(1),
+  to_items: z.string().min(1).array().optional().default([]),
   requirement_schema: JsonSchemaDocumentSchema,
   event_schema: JsonSchemaDocumentSchema.optional(),
 });
@@ -58,6 +60,14 @@ export const NetworkConfigSchema = z.object({
   schema_standard: z.string().optional(),
   domains: NetworkDomainSchema.array().default([]),
   instances: NetworkInstanceSchema.array().default([]),
+  cross_network_origins: z
+    .object({
+      name: z.string().min(1),
+      display_name: z.string().optional(),
+      schema_url: z.url(),
+    })
+    .array()
+    .default([]),
   actions: z.record(z.string(), NetworkActionSchema).default({}),
 });
 
@@ -78,8 +88,10 @@ export function getActionInteraction(
     actionName: string;
     fromNetwork: string;
     fromDomain: string;
+    fromItemType?: string;
     toNetwork: string;
     toDomain: string;
+    toItemType?: string;
   }
 ) {
   const action = networkConfig.actions[input.actionName];
@@ -97,18 +109,34 @@ export function getActionInteraction(
     return (
       fromNetwork === input.fromNetwork &&
       entry.from_domain === input.fromDomain &&
+      matchesAllowedItemType(entry.from_items, input.fromItemType) &&
       toNetwork === input.toNetwork &&
-      entry.to_domain === input.toDomain
+      entry.to_domain === input.toDomain &&
+      matchesAllowedItemType(entry.to_items, input.toItemType)
     );
   });
 
   if (!interaction) {
     throw new Error(
-      `Action "${input.actionName}" is not allowed from "${input.fromNetwork}/${input.fromDomain}" to "${input.toNetwork}/${input.toDomain}".`
+      `Action "${input.actionName}" is not allowed from "${input.fromNetwork}/${input.fromDomain}${formatItemType(input.fromItemType)}" to "${input.toNetwork}/${input.toDomain}${formatItemType(input.toItemType)}".`
     );
   }
 
   return interaction;
+}
+
+function matchesAllowedItemType(
+  allowedItemTypes: string[],
+  itemType: string | undefined
+) {
+  return (
+    allowedItemTypes.length === 0 ||
+    Boolean(itemType && allowedItemTypes.includes(itemType))
+  );
+}
+
+function formatItemType(itemType: string | undefined) {
+  return itemType ? `/${itemType}` : '';
 }
 
 export function getDomainItemSchema(
@@ -199,15 +227,30 @@ export function getInstanceCustomItemSchemaUrl(
 export function validateAgainstJsonSchema(
   schema: Record<string, unknown>,
   payload: unknown,
-  label: string
+  label: string,
+  options: {
+    allowAdditionalProperties?: boolean;
+    ignoredKeys?: readonly string[];
+  } = {}
 ) {
+  const ignoredKeys = options.ignoredKeys ?? [];
+  const schemaForValidation = options.allowAdditionalProperties
+    ? allowAdditionalProperties(schema)
+    : schema;
+  const finalSchema =
+    ignoredKeys.length > 0
+      ? omitRequiredSchemaKeys(schemaForValidation, ignoredKeys)
+      : schemaForValidation;
+  const finalPayload =
+    ignoredKeys.length > 0 ? omitObjectKeys(payload, ignoredKeys) : payload;
+
   const ajv = new Ajv2020({
     strict: false,
     allErrors: true,
   });
 
-  const validate = ajv.compile(schema);
-  const valid = validate(payload);
+  const validate = ajv.compile(finalSchema);
+  const valid = validate(finalPayload);
 
   if (valid) {
     return;
@@ -218,4 +261,85 @@ export function validateAgainstJsonSchema(
     'unknown validation error';
 
   throw new Error(`Invalid ${label}: ${message}`);
+}
+
+function omitObjectKeys(input: unknown, ignoredKeys: readonly string[]) {
+  if (!isPlainObject(input)) {
+    return input;
+  }
+
+  return Object.fromEntries(
+    Object.entries(input).filter(([key]) => !ignoredKeys.includes(key))
+  );
+}
+
+function omitRequiredSchemaKeys(
+  schema: Record<string, unknown>,
+  ignoredKeys: readonly string[]
+): Record<string, unknown> {
+  return rewriteJsonSchema(schema, (value) => {
+    const required = value.required;
+
+    if (!Array.isArray(required)) {
+      return value;
+    }
+
+    return {
+      ...value,
+      required: required.filter(
+        (entry) => typeof entry !== 'string' || !ignoredKeys.includes(entry)
+      ),
+    };
+  });
+}
+
+function allowAdditionalProperties(
+  schema: Record<string, unknown>
+): Record<string, unknown> {
+  return rewriteJsonSchema(schema, (value) => {
+    const next = { ...value };
+
+    if (next.additionalProperties === false) {
+      next.additionalProperties = true;
+    }
+
+    if (next.unevaluatedProperties === false) {
+      next.unevaluatedProperties = true;
+    }
+
+    return next;
+  });
+}
+
+function rewriteJsonSchema(
+  schema: Record<string, unknown>,
+  rewriteObject: (value: Record<string, unknown>) => Record<string, unknown>
+): Record<string, unknown> {
+  return rewriteObject(
+    Object.fromEntries(
+      Object.entries(schema).map(([key, value]) => [
+        key,
+        rewriteJsonValue(value, rewriteObject),
+      ])
+    )
+  );
+}
+
+function rewriteJsonValue(
+  value: unknown,
+  rewriteObject: (value: Record<string, unknown>) => Record<string, unknown>
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => rewriteJsonValue(entry, rewriteObject));
+  }
+
+  if (isPlainObject(value)) {
+    return rewriteJsonSchema(value, rewriteObject);
+  }
+
+  return value;
+}
+
+function isPlainObject(input: unknown): input is Record<string, unknown> {
+  return typeof input === 'object' && input !== null && !Array.isArray(input);
 }

@@ -17,7 +17,7 @@ import {
 } from '../../../utils/served_domain_guard';
 import { getNetworkConfigByName } from '../../../network_configs';
 import { getOrFetchSchemaByUrl } from '../../../network_schema_cache';
-import { getCurrentApiBaseUrl } from '../../../config';
+import { apiConfig, getCurrentApiBaseUrl } from '../../../config';
 
 type CreateItemRequest = FastifyRequest<{
   Body: z.infer<typeof CreateItemBodySchema>;
@@ -106,7 +106,9 @@ export const create_item_handler = async (
       );
     }
 
-    validateAgainstJsonSchema(itemSchema, body.item_state, 'item_state');
+    validateAgainstJsonSchema(itemSchema, body.item_state, 'item_state', {
+      allowAdditionalProperties: apiConfig.allow_extra_schema_data,
+    });
   } catch (err) {
     return reply.code(400).send({
       error: 'INVALID_ITEM_STATE',

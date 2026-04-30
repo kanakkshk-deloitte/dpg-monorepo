@@ -59,10 +59,6 @@
   },
   "created_by": "REAL_USER_ID",
   "response_event_type": "application_status",
-  "response_event_payload": {
-    "status": "submitted",
-    "message": "Application received"
-  },
   "response_event_metadata": {
     "request_id": "req_bd_001",
     "source": "manual_test"

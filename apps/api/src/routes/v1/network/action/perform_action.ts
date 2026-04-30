@@ -11,17 +11,19 @@ import {
   ensureActionPartition,
   item_actions,
 } from '@dpg/database';
-import { getCurrentApiBaseUrl } from '../../../../config';
+import { apiConfig, getCurrentApiBaseUrl } from '../../../../config';
 import { getNetworkConfigByName } from '../../../../network_configs';
 import {
   isServedDomainBinding,
   replyForUnservedDomain,
 } from '../../../../utils/served_domain_guard';
 import {
+  buildActionEventPayload,
   fetchLocalItemSnapshot,
   insertActionEvent,
   isCurrentInstanceItem,
   mirrorActionEventToSourceInstance,
+  validateActionEventPayload,
 } from '../../../../utils/action_event_runtime';
 
 type PerformNetworkActionRequest = FastifyRequest<{
@@ -89,14 +91,17 @@ export const perform_network_action_handler = async (
       actionName: body.action_name,
       fromNetwork: body.source_item.item_network,
       fromDomain: body.source_item.item_domain,
+      fromItemType: body.source_item.item_type,
       toNetwork: body.target_item.item_network,
       toDomain: body.target_item.item_domain,
+      toItemType: body.target_item.item_type,
     });
 
     validateAgainstJsonSchema(
       interaction.requirement_schema,
       body.requirements_snapshot,
-      'action requirements'
+      'action requirements',
+      { allowAdditionalProperties: apiConfig.allow_extra_schema_data }
     );
   } catch (err) {
     return reply.code(400).send({
@@ -145,10 +150,25 @@ export const perform_network_action_handler = async (
 
   const actionStatus = 'created';
   const updateCount = 0;
-  const eventPayload =
-    interaction.event_schema && Object.keys(interaction.event_schema).length > 0
-      ? {}
-      : {};
+  const eventPayload = buildActionEventPayload({
+    event_schema: interaction.event_schema,
+    action_status: actionStatus,
+    context: {
+      action_name: body.action_name,
+      source_item: body.source_item,
+      target_item: body.target_item,
+      requirements_snapshot: body.requirements_snapshot,
+    },
+  });
+
+  try {
+    validateActionEventPayload(interaction.event_schema, eventPayload);
+  } catch (err) {
+    return reply.code(400).send({
+      error: 'INVALID_ACTION_EVENT',
+      message: err instanceof Error ? err.message : 'Invalid action event',
+    });
+  }
 
   const [created] = await db
     .insert(item_actions)

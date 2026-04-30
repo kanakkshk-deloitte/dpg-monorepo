@@ -86,8 +86,10 @@ Actions define interaction rules.
       {
         "from_network": "yellow_dot",
         "from_domain": "student",
+        "from_items": ["profile_1.0"],
         "to_network": "yellow_dot",
         "to_domain": "tutor",
+        "to_items": ["profile_1.0"],
         "requirement_schema": { "...": "..." },
         "event_schema": { "...": "..." }
       }
@@ -96,7 +98,7 @@ Actions define interaction rules.
 }
 ```
 
-`from_network` and `to_network` are optional. When omitted, the current network name is used. Include them for cross-network interactions.
+`from_network` and `to_network` are optional. When omitted, the current network name is used. `from_items` and `to_items` restrict the allowed source and target item types; omit them only when all item types for the domains are allowed.
 
 ## Runtime Usage In DPG
 
@@ -106,7 +108,7 @@ API-enforced behavior:
 - `POST /api/v1/item/create` validates `item_state` and generates `item_instance_url` and `item_schema_url`
 - `GET /api/v1/item/fetch` is instance-local
 - `GET /api/v1/network/item/fetch` is inter-instance and honors `minimum_cache_ttl_seconds`
-- `POST /api/v1/action/perform` validates `requirements_snapshot` against `requirement_schema`
+- `POST /api/v1/action/perform` validates item-type eligibility and `requirements_snapshot` against `requirement_schema`
 - `POST /api/v1/network/action/perform` creates the target-side action and initial event
 - `POST /api/v1/action/update-status` validates generated event payloads against `event_schema`
 - `POST /api/v1/event/store` validates mirrored event payloads against `event_schema`

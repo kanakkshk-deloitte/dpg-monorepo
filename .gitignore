@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 v10/
+.codacy
 
 # Build Outputs
 dist/

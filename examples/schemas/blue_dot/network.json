@@ -105,8 +105,10 @@
         {
           "from_network": "blue_dot",
           "from_domain": "seeker",
+          "from_items": ["profile_1.0"],
           "to_network": "blue_dot",
           "to_domain": "provider",
+          "to_items": ["job_posting_1.0", "job_posting_1.1"],
           "requirement_schema": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Job Application Requirement",
@@ -133,13 +135,13 @@
             "title": "Job Application Event",
             "type": "object",
             "additionalProperties": false,
-            "required": ["status", "message"],
+            "required": ["status", "remark"],
             "properties": {
               "status": {
                 "type": "string",
                 "enum": ["submitted", "shortlisted", "rejected"]
               },
-              "message": {
+              "remark": {
                 "type": "string"
               }
             }

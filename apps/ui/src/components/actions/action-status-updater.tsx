@@ -1,9 +1,5 @@
 import * as React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNetworkConfig } from '@/hooks/use-network-config';
-import { SchemaForm } from '@/components/forms/schema-form';
-import { resolveRefs } from '@/engine/schema/resolve-schema';
-import type { RJSFSchema } from '@rjsf/utils';
 import type { Action } from '@/lib/action-api';
 
 // Desktop: Dialog
@@ -46,8 +42,6 @@ interface ActionStatusUpdaterProps {
   suggestedStatus?: string;
 }
 
-const STATUS_FORM_ID = 'action-status-form';
-
 // Valid status transitions based on current status
 const getValidTransitions = (currentStatus: string): string[] => {
   const transitions: Record<string, string[]> = {
@@ -76,61 +70,17 @@ export function ActionStatusUpdater({
 }: ActionStatusUpdaterProps) {
   const isMobile = useIsMobile();
   const { mutate: updateStatus, isPending } = useUpdateActionStatus();
-  const { data: networkConfig } = useNetworkConfig(action?.source_item_network ?? null);
 
   const [status, setStatus] = React.useState(suggestedStatus ?? '');
   const [remarks, setRemarks] = React.useState('');
-  const [eventPayload, setEventPayload] = React.useState<Record<string, unknown>>({});
-  const [eventSchema, setEventSchema] = React.useState<RJSFSchema | null>(null);
 
   // Reset form when action changes or modal opens
   React.useEffect(() => {
     if (open && action) {
       setStatus(suggestedStatus ?? getValidTransitions(action.action_status)[0] ?? '');
       setRemarks('');
-      setEventPayload({});
     }
   }, [open, action, suggestedStatus]);
-
-  // Load event schema from network config
-  React.useEffect(() => {
-    if (!open || !action || !networkConfig) {
-      setEventSchema(null);
-      return;
-    }
-
-    // Find the action interaction in network config
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const actions = networkConfig.actions as Record<string, { description?: string; interactions?: Array<{ from_domain: string; to_domain: string; event_schema?: unknown }> }> | undefined;
-    const actionConfig = actions?.[action.action_name];
-    if (!actionConfig) {
-      setEventSchema(null);
-      return;
-    }
-
-    const interaction = actionConfig.interactions?.find(
-      (i: { from_domain: string; to_domain: string }) =>
-        i.from_domain === action.source_item_domain &&
-        i.to_domain === action.target_item_domain
-    );
-
-    if (!interaction?.event_schema) {
-      setEventSchema(null);
-      return;
-    }
-
-    // Resolve schema refs if needed
-    const schema = interaction.event_schema;
-    if (schema && typeof schema === 'object' && '$ref' in schema && typeof schema.$ref === 'string') {
-      resolveRefs(schema as RJSFSchema)
-        .then(setEventSchema)
-        .catch(() => setEventSchema(null));
-    } else if (schema && typeof schema === 'object') {
-      setEventSchema(schema as RJSFSchema);
-    } else {
-      setEventSchema(null);
-    }
-  }, [open, action, networkConfig]);
 
   if (!action) return null;
 
@@ -147,14 +97,13 @@ export function ActionStatusUpdater({
         action_id: action.action_id,
         action_status: status,
         remarks: remarks || undefined,
-        event_payload: Object.keys(eventPayload).length > 0 ? eventPayload : undefined,
       },
       {
         onSuccess: () => {
           toast.success(`Action ${statusLabels[status]?.toLowerCase() ?? status} successfully`);
           onOpenChange(false);
         },
-        onError: (error) => {
+        onError: (error: Error) => {
           toast.error(`Failed to update status: ${error.message}`);
         },
       }
@@ -190,21 +139,6 @@ export function ActionStatusUpdater({
           placeholder="Add any notes about this status change..."
         />
       </div>
-
-      {/* Dynamic Event Schema Form */}
-      {eventSchema && (
-        <div className="space-y-2">
-          <Label>Additional Information</Label>
-          <div className="border rounded-md p-4">
-            <SchemaForm
-              id={STATUS_FORM_ID}
-              schema={eventSchema}
-              hideSubmit
-              onSubmit={setEventPayload}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 

@@ -15,7 +15,9 @@ Actions describe what one domain can request from another domain. They also defi
     "interactions": [
       {
         "from_domain": "student",
+        "from_items": ["profile_1.0"],
         "to_domain": "tutor",
+        "to_items": ["profile_1.0"],
         "requirement_schema": {
           "type": "object",
           "required": ["subject", "goal"],
@@ -26,13 +28,13 @@ Actions describe what one domain can request from another domain. They also defi
         },
         "event_schema": {
           "type": "object",
-          "required": ["status", "message"],
+          "required": ["status", "remark"],
           "properties": {
             "status": {
               "type": "string",
               "enum": ["created", "accepted", "rejected"]
             },
-            "message": { "type": "string" }
+            "remark": { "type": "string" }
           }
         }
       }
@@ -45,7 +47,9 @@ Actions describe what one domain can request from another domain. They also defi
 |-------|---------|
 | action name | Stable API value such as `connect`, `apply`, `book_trip` |
 | `from_domain` | Domain that initiates the action |
+| `from_items` | Source item types allowed to initiate the action |
 | `to_domain` | Domain that receives the action |
+| `to_items` | Target item types allowed to receive the action |
 | `requirement_schema` | Request payload shape |
 | `event_schema` | Event/status payload shape |
 

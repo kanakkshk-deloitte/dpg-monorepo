@@ -2,7 +2,6 @@ import { eq } from 'drizzle-orm';
 import z, {
   getActionInteraction,
   UpdateActionStatusBodySchema,
-  validateAgainstJsonSchema,
 } from '@dpg/schemas';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -15,9 +14,11 @@ import {
 import { getCurrentApiBaseUrl } from '../../../config';
 import { getNetworkConfigByName } from '../../../network_configs';
 import {
+  buildActionEventPayload,
   fetchLocalItemSnapshot,
   insertActionEvent,
   mirrorActionEventToSourceInstance,
+  validateActionEventPayload,
 } from '../../../utils/action_event_runtime';
 
 type UpdateActionStatusRequest = FastifyRequest<{
@@ -30,16 +31,6 @@ const UpdateActionStatusResponseSchema = z.object({
   action_status: z.string(),
   update_count: z.number().int().nonnegative(),
 });
-
-function buildActionEventPayload(
-  actionStatus: string,
-  remarks?: string
-): Record<string, unknown> {
-  return {
-    status: actionStatus,
-    message: remarks ?? `Action status updated to ${actionStatus}`,
-  };
-}
 
 export const update_action_status: FastifyPluginAsyncZod = async function (fastify) {
   fastify.route({
@@ -75,25 +66,55 @@ export const update_action_status_handler = async (
     });
   }
 
-  const eventPayload = buildActionEventPayload(body.action_status, body.remarks);
+  let interaction: ReturnType<typeof getActionInteraction>;
 
   try {
     const networkConfig = await getNetworkConfigByName(existingAction.target_item_network);
-    const interaction = getActionInteraction(networkConfig, {
+    interaction = getActionInteraction(networkConfig, {
       actionName: existingAction.action_name,
       fromNetwork: existingAction.source_item_network,
       fromDomain: existingAction.source_item_domain,
+      fromItemType: existingAction.source_item_type,
       toNetwork: existingAction.target_item_network,
       toDomain: existingAction.target_item_domain,
+      toItemType: existingAction.target_item_type,
     });
+  } catch (err) {
+    return reply.code(400).send({
+      error: 'INVALID_ACTION_EVENT',
+      message: err instanceof Error ? err.message : 'Invalid action event',
+    });
+  }
 
-    if (interaction.event_schema) {
-      validateAgainstJsonSchema(
-        interaction.event_schema,
-        eventPayload,
-        'event payload'
-      );
-    }
+  const eventPayload = buildActionEventPayload({
+    event_schema: interaction.event_schema,
+    action_status: body.action_status,
+    remarks: body.remarks,
+    context: {
+      action_name: existingAction.action_name,
+      source_item: {
+        item_network: existingAction.source_item_network,
+        item_domain: existingAction.source_item_domain,
+        item_type: existingAction.source_item_type,
+        item_id: existingAction.source_item_id,
+        item_instance_url: existingAction.source_item_instance_url,
+      },
+      target_item: {
+        item_network: existingAction.target_item_network,
+        item_domain: existingAction.target_item_domain,
+        item_type: existingAction.target_item_type,
+        item_id: existingAction.target_item_id,
+        item_instance_url: existingAction.target_item_instance_url,
+      },
+      requirements_snapshot: existingAction.requirements_snapshot as Record<
+        string,
+        unknown
+      >,
+    },
+  });
+
+  try {
+    validateActionEventPayload(interaction.event_schema, eventPayload);
   } catch (err) {
     return reply.code(400).send({
       error: 'INVALID_ACTION_EVENT',

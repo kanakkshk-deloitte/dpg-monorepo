@@ -71,7 +71,6 @@ export interface UpdateActionStatusPayload {
   action_id: string;
   action_status: string;
   remarks?: string;
-  event_payload?: Record<string, unknown>;
 }
 
 /**

@@ -371,7 +371,7 @@ await db.insert(action_events).values({
   target_item_id: '22222222-2222-2222-2222-222222222222',
   target_item_instance_url: 'https://tutor.yellowdot.example.com',
   target_item_owner: 'tutor_user_id',
-  event_payload: { status: 'created', message: 'Action created' },
+  event_payload: { status: 'created', remark: 'Action created' },
 });
 ```
 

@@ -25,8 +25,10 @@ type NetworkInstanceConfig = {
 export type NetworkActionInteraction = {
   from_network?: string;
   from_domain: string;
+  from_items?: string[];
   to_network?: string;
   to_domain: string;
+  to_items?: string[];
   requirement_schema: JsonSchemaDocument;
   event_schema?: JsonSchemaDocument;
 };
@@ -43,7 +45,14 @@ export type NetworkConfig = {
   schema_standard?: string;
   domains?: NetworkDomainConfig[];
   instances?: NetworkInstanceConfig[];
+  cross_network_origins?: NetworkCrossOriginConfig[];
   actions?: Record<string, NetworkActionConfig>;
+};
+
+export type NetworkCrossOriginConfig = {
+  name: string;
+  display_name?: string;
+  schema_url: string;
 };
 
 export type NetworkConfigSource = 'local' | 'remote';

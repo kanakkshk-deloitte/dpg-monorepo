@@ -55,10 +55,6 @@
   },
   "created_by": "REAL_USER_ID",
   "response_event_type": "action_response",
-  "response_event_payload": {
-    "status": "pending",
-    "message": "Connect request created"
-  },
   "response_event_metadata": {
     "request_id": "req_yd_001",
     "source": "manual_test"
