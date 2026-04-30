@@ -6,7 +6,7 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import AuthRoutes from './routes/auth';
-import { apiConfig, instance } from './config';
+import { apiConfig, getCurrentApiBaseUrl, instance } from './config';
 import cors from '@fastify/cors';
 import fastifyQs from 'fastify-qs';
 import fastifySwagger from '@fastify/swagger';
@@ -68,8 +68,8 @@ await app.register(fastifySwagger, {
     },
     servers: [
       {
-        url: `http://localhost:${apiConfig.port}`,
-        description: 'Local development server',
+        url: getCurrentApiBaseUrl(),
+        description: 'Current API instance',
       },
     ],
   },
