@@ -97,15 +97,15 @@ export function MatchScoreButton({
             className="gap-1.5 min-w-0 max-w-full"
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Calculate Match</span>
+            <span className="truncate">See Match Score</span>
           </Button>
         </TooltipTrigger>
         {isDisabled && (
           <TooltipContent side="top">
             <p className="max-w-xs text-xs">
-              {!localItem 
-                ? 'Create a profile to calculate match scores'
-                : 'Sign in to calculate match scores'
+                {!localItem 
+                ? 'Create a profile to see match scores'
+                : 'Sign in to see match scores'
               }
             </p>
           </TooltipContent>
