@@ -12,6 +12,16 @@ export default defineConfig({
       title: 'DPG Documentation',
       description:
         'Architecture, setup, and package documentation for the DPG backend monorepo.',
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/dhiway/dpg-monorepo',
+        },
+      ],
+      editLink: {
+        baseUrl: 'https://github.com/dhiway/dpg-monorepo/edit/main/apps/docs/',
+      },
       head: [
         {
           tag: 'meta',
