@@ -29,6 +29,10 @@
               "type": "string",
               "minLength": 1
             },
+            "Full Name": {
+              "type": "string",
+              "minLength": 1
+            }
             "Phone Number": {
               "type": "string",
               "pattern": "^[0-9]{10}$",
