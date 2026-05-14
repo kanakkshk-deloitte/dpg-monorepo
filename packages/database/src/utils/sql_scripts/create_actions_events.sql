@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS item_actions (
+  partition_network TEXT NOT NULL,
   action_name TEXT NOT NULL,
   action_id UUID DEFAULT gen_random_uuid() NOT NULL,
   action_status TEXT NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS item_actions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT item_actions_pk PRIMARY KEY (action_name, action_id),
+  CONSTRAINT item_actions_pk PRIMARY KEY (partition_network, action_name, action_id),
   CONSTRAINT item_actions_target_item_fk FOREIGN KEY (
     target_item_network,
     target_item_domain,
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS item_actions (
     item_id
   ) ON DELETE CASCADE
 )
-PARTITION BY LIST (action_name);
+PARTITION BY LIST (partition_network);
 
 CREATE INDEX IF NOT EXISTS item_actions_source_item_idx
 ON item_actions (
@@ -69,12 +70,13 @@ CREATE INDEX IF NOT EXISTS item_actions_status_idx
 ON item_actions (action_status, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS item_actions_update_count_idx
-ON item_actions (action_name, action_id, update_count DESC);
+ON item_actions (partition_network, action_name, action_id, update_count DESC);
 
 CREATE INDEX IF NOT EXISTS item_actions_requirements_gin_idx
 ON item_actions USING GIN (requirements_snapshot);
 
 CREATE TABLE IF NOT EXISTS action_events (
+  partition_network TEXT NOT NULL,
   action_name TEXT NOT NULL,
   event_id UUID DEFAULT gen_random_uuid() NOT NULL,
   origin_instance_domain TEXT NOT NULL,
@@ -104,15 +106,15 @@ CREATE TABLE IF NOT EXISTS action_events (
   remarks TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT action_events_pk PRIMARY KEY (action_name, event_id)
+  CONSTRAINT action_events_pk PRIMARY KEY (partition_network, action_name, event_id)
 )
-PARTITION BY LIST (action_name);
+PARTITION BY LIST (partition_network);
 
 CREATE UNIQUE INDEX IF NOT EXISTS action_events_origin_action_update_idx
-ON action_events (action_name, origin_instance_domain, action_id, update_count);
+ON action_events (partition_network, action_name, origin_instance_domain, action_id, update_count);
 
 CREATE INDEX IF NOT EXISTS action_events_action_idx
-ON action_events (action_name, action_id, update_count DESC, created_at DESC);
+ON action_events (partition_network, action_name, action_id, update_count DESC, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS action_events_source_item_idx
 ON action_events (

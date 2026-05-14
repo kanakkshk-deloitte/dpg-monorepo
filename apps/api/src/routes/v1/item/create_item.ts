@@ -129,8 +129,7 @@ export const create_item_handler = async (
     await ensureItemPartition(
       db,
       body.item_network,
-      body.item_domain,
-      body.item_type
+      body.item_domain
     );
   } catch (err) {
     request.log.error(

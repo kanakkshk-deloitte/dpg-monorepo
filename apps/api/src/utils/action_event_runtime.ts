@@ -110,6 +110,7 @@ export async function insertActionEvent(
     .insert(action_events)
     .values({
       action_name: event.action_name,
+      partition_network: getActionEventPartitionNetwork(event),
       origin_instance_domain: event.origin_instance_domain,
       action_id: event.action_id,
       action_status: event.action_status,
@@ -135,6 +136,7 @@ export async function insertActionEvent(
     })
     .onConflictDoNothing({
       target: [
+        action_events.partition_network,
         action_events.action_name,
         action_events.origin_instance_domain,
         action_events.action_id,
@@ -150,6 +152,14 @@ export async function insertActionEvent(
     });
 
   return created ?? null;
+}
+
+function getActionEventPartitionNetwork(event: StoredActionEvent) {
+  if (isCurrentInstanceItem(event.target_item)) {
+    return event.target_item.item_network;
+  }
+
+  return event.source_item.item_network;
 }
 
 export function isCurrentInstanceItem(item: ActionItemRef) {

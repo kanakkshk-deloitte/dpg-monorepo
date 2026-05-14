@@ -17,6 +17,7 @@ export const action_events = pgTable(
   'action_events',
   {
     action_name: text('action_name').notNull(),
+    partition_network: text('partition_network').notNull(),
     event_id: uuid('event_id').defaultRandom().notNull(),
     origin_instance_domain: text('origin_instance_domain').notNull(),
     action_id: uuid('action_id').notNull(),
@@ -53,9 +54,10 @@ export const action_events = pgTable(
   },
   (table) => [
     primaryKey({
-      columns: [table.action_name, table.event_id],
+      columns: [table.partition_network, table.action_name, table.event_id],
     }),
     uniqueIndex('action_events_origin_action_update_idx').on(
+      table.partition_network,
       table.action_name,
       table.origin_instance_domain,
       table.action_id,

@@ -85,7 +85,11 @@ export const store_event_handler = async (
   }
 
   try {
-    await ensureActionEventPartition(db, body.action_name);
+    await ensureActionEventPartition(
+      db,
+      body.source_item.item_network,
+      body.action_name
+    );
   } catch (err) {
     request.log.error(
       {

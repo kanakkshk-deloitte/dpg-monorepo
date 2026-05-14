@@ -131,8 +131,16 @@ export const perform_network_action_handler = async (
   }
 
   try {
-    await ensureActionPartition(db, body.action_name);
-    await ensureActionEventPartition(db, body.action_name);
+    await ensureActionPartition(
+      db,
+      body.target_item.item_network,
+      body.action_name
+    );
+    await ensureActionEventPartition(
+      db,
+      body.target_item.item_network,
+      body.action_name
+    );
   } catch (err) {
     request.log.error(
       {
@@ -174,6 +182,7 @@ export const perform_network_action_handler = async (
     .insert(item_actions)
     .values({
       action_name: body.action_name,
+      partition_network: body.target_item.item_network,
       action_status: actionStatus,
       update_count: updateCount,
       source_item_network: body.source_item.item_network,

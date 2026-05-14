@@ -123,7 +123,11 @@ export const update_action_status_handler = async (
   }
 
   try {
-    await ensureActionEventPartition(db, existingAction.action_name);
+    await ensureActionEventPartition(
+      db,
+      existingAction.target_item_network,
+      existingAction.action_name
+    );
   } catch (err) {
     request.log.error(
       {
