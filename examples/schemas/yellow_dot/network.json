@@ -179,9 +179,9 @@
       "description": "Defines which domains can connect to which other domains, what requirement payload they send, and what event payload is returned.",
       "interactions": [
         {
-          "from_network": "yellow_dot",
+          "from_network": "onest_yellow_dot",
           "from_domain": "student",
-          "to_network": "yellow_dot",
+          "to_network": "onest_yellow_dot",
           "to_domain": "individual_tutor_weera_counsellor",
           "requirement_schema": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -251,9 +251,9 @@
           }
         },
         {
-          "from_network": "yellow_dot",
+          "from_network": "onest_yellow_dot",
           "from_domain": "individual_tutor_weera_counsellor",
-          "to_network": "yellow_dot",
+          "to_network": "onest_yellow_dot",
           "to_domain": "student",
           "requirement_schema": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
