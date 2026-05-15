@@ -236,19 +236,19 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "Connection Status",
-              "Message"
+              "status",
+              "remark"
             ],
             "properties": {
-              "Connection Status": {
+              "status": {
                 "type": "string",
                 "enum": [
-                  "pending",
+                  "created",
                   "accepted",
                   "rejected"
                 ]
               },
-              "Message": {
+              "remark": {
                 "type": "string"
               }
             }
@@ -279,19 +279,19 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "Connection Status",
-              "Message"
+              "status",
+              "remark"
             ],
             "properties": {
-              "Connection Status": {
+              "status": {
                 "type": "string",
                 "enum": [
-                  "pending",
+                  "created",
                   "accepted",
                   "rejected"
                 ]
               },
-              "Message": {
+              "remark": {
                 "type": "string"
               }
             }

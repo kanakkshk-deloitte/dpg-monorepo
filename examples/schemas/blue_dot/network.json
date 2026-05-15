@@ -206,13 +206,13 @@
             "title": "Job Application Event",
             "type": "object",
             "additionalProperties": false,
-            "required": ["status", "message"],
+            "required": ["status", "remark"],
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["submitted", "shortlisted", "rejected"]
+                "enum": ["created", "submitted", "shortlisted", "rejected"]
               },
-              "message": {
+              "remark": {
                 "type": "string"
               }
             }
@@ -252,13 +252,13 @@
             "title": "Interview Invitation Event",
             "type": "object",
             "additionalProperties": false,
-            "required": ["status", "message"],
+            "required": ["status", "remark"],
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["invited", "accepted", "rejected"]
+                "enum": ["created", "invited", "accepted", "rejected"]
               },
-              "message": {
+              "remark": {
                 "type": "string"
               }
             }
