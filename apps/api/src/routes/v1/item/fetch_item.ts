@@ -1,6 +1,6 @@
 import z, {
   FetchItemsQuerySchema,
-  ItemSelectSchema,
+  ItemResponseSchema,
 } from '@dpg/schemas';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -31,7 +31,7 @@ export const fetch_items: FastifyPluginAsyncZod = async function (fastify) {
             limit: z.number(),
             offset: z.number(),
           }),
-          items: ItemSelectSchema.array(),
+          items: ItemResponseSchema.array(),
         }),
       },
     },
@@ -87,6 +87,7 @@ const fetch_items_handler = async (
       radius_meters,
       limit,
       offset,
+      includePrivateState: true,
     };
     const result = await getCachedLocalItemFetch(filters, () =>
       fetchLocalItems(filters)

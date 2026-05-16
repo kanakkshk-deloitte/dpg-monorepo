@@ -4,6 +4,7 @@ import z, {
   getDomainItemSchema,
   getDomainItemTypes,
   getInstanceCustomItemSchemaUrl,
+  splitItemStateByPrivacy,
   validateAgainstJsonSchema,
 } from '@dpg/schemas';
 import { FastifyReply, FastifyRequest } from 'fastify';
@@ -51,8 +52,13 @@ export const create_item_handler = async (
 ) => {
   const userId = request.user?.id;
   const body = request.body;
+  const submittedItemState = body.item_state ?? {};
   const itemInstanceUrl = getCurrentApiBaseUrl();
   let itemSchemaUrl = `${itemInstanceUrl}/api/v1/network/schema/${encodeURIComponent(body.item_network)}/${encodeURIComponent(body.item_domain)}/${encodeURIComponent(body.item_type)}`;
+  let itemState = {
+    publicState: submittedItemState,
+    privateState: {},
+  };
 
   if (!userId) {
     return reply.code(401).send({
@@ -115,9 +121,10 @@ export const create_item_handler = async (
         }) ?? itemSchemaUrl;
     }
 
-    validateAgainstJsonSchema(itemSchema, body.item_state, 'item_state', {
+    validateAgainstJsonSchema(itemSchema, submittedItemState, 'item_state', {
       allowAdditionalProperties: apiConfig.allow_extra_schema_data,
     });
+    itemState = splitItemStateByPrivacy(itemSchema, submittedItemState);
   } catch (err) {
     return reply.code(400).send({
       error: 'INVALID_ITEM_STATE',
@@ -160,7 +167,8 @@ export const create_item_handler = async (
 
         item_schema_url: itemSchemaUrl,
 
-        item_state: body.item_state,
+        item_state: itemState.publicState,
+        item_private_state: itemState.privateState,
         item_latitude: body.item_latitude ?? null,
         item_longitude: body.item_longitude ?? null,
         created_by: userId,
