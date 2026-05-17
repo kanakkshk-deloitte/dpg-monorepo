@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "DPG Single Domain API",
-    "_postman_id": "dpg-single-domain-api-collection",
-    "description": "Generic Postman collection for one DPG API instance serving one network/domain. Use schema-specific collections for concrete example networks.",
+    "name": "Blue Dot API",
+    "_postman_id": "blue-dot-api-collection",
+    "description": "Schema-specific Postman collection for examples/schemas/blue_dot/network.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -39,80 +39,52 @@
       "value": ""
     },
     {
-      "key": "user_email",
-      "value": ""
-    },
-    {
-      "key": "user_phone",
-      "value": ""
-    },
-    {
-      "key": "user_display_name",
-      "value": ""
-    },
-    {
       "key": "network",
-      "value": "example_network"
+      "value": "blue_dot"
+    },
+    {
+      "key": "seeker_domain",
+      "value": "seeker"
+    },
+    {
+      "key": "seeker_item_type",
+      "value": "profile_1.0"
+    },
+    {
+      "key": "seeker_item_id",
+      "value": ""
+    },
+    {
+      "key": "seeker_instance_url",
+      "value": "http://127.0.0.1:2742"
+    },
+    {
+      "key": "provider_domain",
+      "value": "provider"
+    },
+    {
+      "key": "provider_item_type",
+      "value": "job_posting_1.0"
+    },
+    {
+      "key": "provider_item_id",
+      "value": ""
+    },
+    {
+      "key": "provider_instance_url",
+      "value": "http://127.0.0.1:2742"
     },
     {
       "key": "domain",
-      "value": "example_domain"
+      "value": "seeker"
     },
     {
       "key": "item_type",
       "value": "profile_1.0"
     },
     {
-      "key": "item_id",
-      "value": ""
-    },
-    {
-      "key": "source_item_network",
-      "value": "example_network"
-    },
-    {
-      "key": "source_item_domain",
-      "value": "example_domain"
-    },
-    {
-      "key": "source_item_type",
-      "value": "profile_1.0"
-    },
-    {
-      "key": "source_item_id",
-      "value": ""
-    },
-    {
-      "key": "source_instance_url",
-      "value": "http://127.0.0.1:2742"
-    },
-    {
-      "key": "source_item_owner",
-      "value": ""
-    },
-    {
-      "key": "target_item_network",
-      "value": "example_network"
-    },
-    {
-      "key": "target_item_domain",
-      "value": "example_domain"
-    },
-    {
-      "key": "target_item_type",
-      "value": "profile_1.0"
-    },
-    {
-      "key": "target_item_id",
-      "value": ""
-    },
-    {
-      "key": "target_instance_url",
-      "value": "http://127.0.0.1:2742"
-    },
-    {
       "key": "action_name",
-      "value": "connect"
+      "value": "apply"
     },
     {
       "key": "action_id",
@@ -339,20 +311,19 @@
       ]
     },
     {
-      "name": "Items",
-      "description": "Generic single-domain item calls. Replace item_state to match the schema selected by network/domain/item_type.",
+      "name": "Blue Dot Items",
+      "description": "Schema-valid item calls for examples/schemas/blue_dot/network.json.",
       "item": [
         {
-          "name": "Create Item",
+          "name": "Create Seeker Profile",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Create item returns 201', function () { pm.response.to.have.status(201); });",
-                  "const data = pm.response.json();",
-                  "if (data.item_id) { pm.collectionVariables.set('item_id', data.item_id); pm.collectionVariables.set('source_item_id', data.item_id); }"
+                  "pm.test('Create seeker returns 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json(); if (data.item_id) pm.collectionVariables.set('seeker_item_id', data.item_id);"
                 ]
               }
             }
@@ -367,12 +338,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"item_network\": \"{{network}}\",\n  \"item_domain\": \"{{domain}}\",\n  \"item_type\": \"{{item_type}}\",\n  \"item_state\": {\n    \"example\": \"replace with schema-valid item_state\"\n  }\n}"
+              "raw": "{\n  \"item_network\": \"{{network}}\",\n  \"item_domain\": \"{{seeker_domain}}\",\n  \"item_type\": \"{{seeker_item_type}}\",\n  \"item_state\": {\n    \"name\": \"Asha Worker\",\n    \"gender\": \"Female\",\n    \"location\": \"Bengaluru\",\n    \"age\": 24,\n    \"phone\": \"9876543210\",\n    \"workExperience\": \"Fresher\",\n    \"workExperienceYearsConditional\": \"0\",\n    \"highestQualificationOrSkill\": \"College\",\n    \"natureOfJobsInterestedIn\": \"Full-time\",\n    \"nameOfJobRolesInterestedIn\": \"Retail associate\",\n    \"otherHelpNeeded\": \"Training\"\n  }\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/item/create",
+              "raw": "{{seeker_instance_url}}/api/v1/item/create",
               "host": [
-                "{{base_url}}"
+                "{{seeker_instance_url}}"
               ],
               "path": [
                 "api",
@@ -381,98 +352,19 @@
                 "create"
               ]
             },
-            "description": "Creates an item for the one domain served by this API instance."
+            "description": "Creates a blue_dot seeker profile item."
           }
         },
         {
-          "name": "Fetch My Items",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/v1/item/fetch?item_network={{network}}&item_domain={{domain}}&item_type={{item_type}}&limit=20&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "item",
-                "fetch"
-              ],
-              "query": [
-                {
-                  "key": "item_network",
-                  "value": "{{network}}"
-                },
-                {
-                  "key": "item_domain",
-                  "value": "{{domain}}"
-                },
-                {
-                  "key": "item_type",
-                  "value": "{{item_type}}"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
-            },
-            "description": "Fetches authenticated user-owned items for the served domain."
-          }
-        },
-        {
-          "name": "Update Item",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_state\": {\n    \"example\": \"replace with full schema-valid updated item_state\"\n  }\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/item/{{item_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "item",
-                "{{item_id}}"
-              ]
-            },
-            "description": "Updates one authenticated user-owned item by id."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Actions And Events",
-      "description": "Generic action/event calls. Fill source/target variables from the selected schema and discovered item IDs.",
-      "item": [
-        {
-          "name": "Perform Action",
+          "name": "Create Provider Job Posting",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Perform action returns 201', function () { pm.response.to.have.status(201); });",
-                  "const data = pm.response.json();",
-                  "if (data.action_id) pm.collectionVariables.set('action_id', data.action_id);",
-                  "if (data.action_status) pm.collectionVariables.set('action_status', data.action_status);",
-                  "if (typeof data.update_count === 'number') pm.collectionVariables.set('update_count', String(data.update_count));"
+                  "pm.test('Create provider posting returns 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json(); if (data.item_id) pm.collectionVariables.set('provider_item_id', data.item_id);"
                 ]
               }
             }
@@ -487,12 +379,47 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"action_name\": \"{{action_name}}\",\n  \"source_item\": {\n    \"item_network\": \"{{source_item_network}}\",\n    \"item_domain\": \"{{source_item_domain}}\",\n    \"item_type\": \"{{source_item_type}}\",\n    \"item_id\": \"{{source_item_id}}\"\n  },\n  \"target_item\": {\n    \"item_network\": \"{{target_item_network}}\",\n    \"item_domain\": \"{{target_item_domain}}\",\n    \"item_type\": \"{{target_item_type}}\",\n    \"item_id\": \"{{target_item_id}}\",\n    \"item_instance_url\": \"{{target_instance_url}}\"\n  },\n  \"requirements_snapshot\": {\n    \"example\": \"replace with schema-valid requirements_snapshot\"\n  }\n}"
+              "raw": "{\n  \"item_network\": \"{{network}}\",\n  \"item_domain\": \"{{provider_domain}}\",\n  \"item_type\": \"{{provider_item_type}}\",\n  \"item_state\": {\n    \"jobProviderName\": \"Blue Jobs Pvt Ltd\",\n    \"role\": \"Retail associate\",\n    \"jobProviderLocation\": \"Bengaluru\",\n    \"hiringManagerName\": \"Nisha Rao\",\n    \"hiringManagerPhoneNumber\": \"9876501234\",\n    \"hiringManagerEmail\": \"nisha@example.com\",\n    \"positions\": 3,\n    \"natureOfJob\": \"Full-time\",\n    \"salaryMin\": 15000,\n    \"salaryMax\": 22000,\n    \"candidateExperienceType\": \"Fresher\",\n    \"minEducationalInstitute\": \"College\",\n    \"workExperienceYears\": \"0\",\n    \"lastRoleHeld\": \"Fresher\"\n  }\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/action/perform",
+              "raw": "{{provider_instance_url}}/api/v1/item/create",
               "host": [
-                "{{base_url}}"
+                "{{provider_instance_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "item",
+                "create"
+              ]
+            },
+            "description": "Creates a blue_dot provider job posting item."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blue Dot Actions",
+      "description": "Schema-valid blue_dot apply/invite actions.",
+      "item": [
+        {
+          "name": "Seeker Applies To Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action_name\": \"apply\",\n  \"source_item\": {\n    \"item_network\": \"blue_dot\",\n    \"item_domain\": \"seeker\",\n    \"item_type\": \"profile_1.0\",\n    \"item_id\": \"{{seeker_item_id}}\"\n  },\n  \"target_item\": {\n    \"item_network\": \"blue_dot\",\n    \"item_domain\": \"provider\",\n    \"item_type\": \"job_posting_1.0\",\n    \"item_id\": \"{{provider_item_id}}\",\n    \"item_instance_url\": \"{{provider_instance_url}}\"\n  },\n  \"requirements_snapshot\": {\n    \"role\": \"Retail associate\",\n    \"age\": 24,\n    \"workExperience\": \"Fresher\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{seeker_instance_url}}/api/v1/action/perform",
+              "host": [
+                "{{seeker_instance_url}}"
               ],
               "path": [
                 "api",
@@ -501,73 +428,36 @@
                 "perform"
               ]
             },
-            "description": "Creates an action from a source item on this instance to a target item on an allowed network instance."
+            "description": "Creates a blue_dot apply action from seeker to provider."
           }
         },
         {
-          "name": "Fetch My Actions",
+          "name": "Provider Invites Seeker",
           "request": {
-            "method": "GET",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action_name\": \"apply\",\n  \"source_item\": {\n    \"item_network\": \"blue_dot\",\n    \"item_domain\": \"provider\",\n    \"item_type\": \"job_posting_1.0\",\n    \"item_id\": \"{{provider_item_id}}\"\n  },\n  \"target_item\": {\n    \"item_network\": \"blue_dot\",\n    \"item_domain\": \"seeker\",\n    \"item_type\": \"profile_1.0\",\n    \"item_id\": \"{{seeker_item_id}}\",\n    \"item_instance_url\": \"{{seeker_instance_url}}\"\n  },\n  \"requirements_snapshot\": {\n    \"role\": \"Retail associate\",\n    \"interview_time\": \"2026-05-20T10:00:00.000Z\",\n    \"interview_mode\": \"online\",\n    \"message_to_candidate\": \"We would like to speak with you.\"\n  }\n}"
+            },
             "url": {
-              "raw": "{{base_url}}/api/v1/action/fetch?ownership_role=all&limit=20&offset=0",
+              "raw": "{{provider_instance_url}}/api/v1/action/perform",
               "host": [
-                "{{base_url}}"
+                "{{provider_instance_url}}"
               ],
               "path": [
                 "api",
                 "v1",
                 "action",
-                "fetch"
-              ],
-              "query": [
-                {
-                  "key": "ownership_role",
-                  "value": "all"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
+                "perform"
               ]
             },
-            "description": "Fetches actions visible to the authenticated user."
-          }
-        },
-        {
-          "name": "Fetch My Events",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/v1/event/fetch?ownership_role=all&limit=20&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "event",
-                "fetch"
-              ],
-              "query": [
-                {
-                  "key": "ownership_role",
-                  "value": "all"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
-            },
-            "description": "Fetches action events visible to the authenticated user."
+            "description": "Creates a blue_dot provider-to-seeker invite action."
           }
         }
       ]

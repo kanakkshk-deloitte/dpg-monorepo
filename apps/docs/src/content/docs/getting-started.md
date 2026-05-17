@@ -85,7 +85,8 @@ Use one of the payloads from:
 
 - `examples/api/yellow_dot.md`
 - `examples/api/blue_dot.md`
-- `examples/postman/dpg.postman_collection.json`
+- `examples/postman/dpg.postman_collection.json` for a generic single-domain collection
+- `examples/schemas/*/postman/*.postman_collection.json` for schema-specific collections
 
 Remember:
 
