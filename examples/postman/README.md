@@ -15,9 +15,35 @@ Files:
   - `user_email`
   - `user_phone`
   - `user_display_name`
-- includes item, action, event, ownership fetch, and network schema requests
+- includes yellow_dot student and tutor item APIs with schema-valid example
+  payloads
+- includes action APIs for both supported yellow_dot directions:
+  - student to `individual_tutor_weera_counsellor`
+  - `individual_tutor_weera_counsellor` to student
+- keeps internal instance-to-instance APIs in
+  `Instance-to-Instance Network Calls`
 
-Postman should also keep the Better Auth session cookie in its cookie jar automatically for the same host.
+Postman should also keep the Better Auth session cookie in its cookie jar
+automatically for the same host. If student and tutor domains are hosted on
+different instances, authenticate against each host before creating or updating
+items there.
+
+## Domain Instance Variables
+
+The collection has separate settings for each yellow_dot domain so a tester can
+point student and tutor traffic at different deployments:
+
+- `student_instance_url`
+- `student_instance_name`
+- `student_instance_description`
+- `tutor_instance_url`
+- `tutor_instance_name`
+- `tutor_instance_description`
+
+The create-item requests update `student_item_id` and `tutor_item_id`. The
+action requests use those variables by default, but you can replace them with
+existing item IDs to test a newly created student against an existing tutor, or
+a newly created tutor against an existing student.
 
 ## Recommended Order
 
@@ -25,14 +51,18 @@ Postman should also keep the Better Auth session cookie in its cookie jar automa
 2. `Auth / Request OTP`
 3. `Auth / Verify OTP`
 4. `Auth / Get Session`
-5. `Network Schemas / Fetch Concrete Item Schema`
-6. `Items / Create Item`
-7. `Items / Fetch My Local Items`
-8. `Actions / Fetch My Actions`
-9. `Actions / Perform Action`
-10. `Actions / Perform Network Action` for internal target-instance testing only
-11. `Events / Fetch My Events`
-12. `Events / Store Event`
+5. `Network Schemas / Fetch Student Item Schema`
+6. `Network Schemas / Fetch Tutor Item Schema`
+7. `Items / Create Student Item`
+8. `Items / Create Tutor Item`
+9. `Items / Update Student Item` or `Items / Update Tutor Item`
+10. `Actions / Student Connects To Tutor`
+11. `Actions / Tutor Connects To Student`
+12. `Actions / Fetch My Actions`
+13. `Events / Fetch My Events`
+14. `Instance-to-Instance Network Calls / Perform Network Action Student To Tutor`
+    or `Perform Network Action Tutor To Student` for direct server-to-server
+    diagnostics only
 
 ## About Schema Import
 
@@ -46,7 +76,8 @@ What works well:
 
 What Postman does not do well by default:
 
-- it does not automatically turn your runtime JSON Schema into a live request form for `item_state`, `requirements_snapshot`, or `event_payload`
+- it does not automatically turn your runtime JSON Schema into a live request
+  form for `item_state`, `requirements_snapshot`, or `event_payload`
 
 So in the current collection:
 
@@ -56,12 +87,18 @@ So in the current collection:
 
 ## Action Payload Notes
 
-- `Actions / Perform Action` is the public source-instance API
-- `Actions / Fetch My Actions` filters directly on stored `source_item_owner` and `target_item_owner`
-- it sends the selected target item's `item_instance_url`
-- it does not send `source_instance_url`; the service derives that from its own runtime config
-- `Actions / Perform Network Action` is the internal target-instance API for direct server-to-server testing
-- `Events / Fetch My Events` filters directly on stored `source_item_owner` and `target_item_owner`
-- `Events / Store Event` now uses the latest event contract with owner ids, `origin_instance_domain`, `action_status`, `update_count`, and item instance URLs
-
-If you want, a next step is to generate a second collection variant that embeds more concrete payload examples for `yellow_dot` and `blue_dot`.
+- `Actions / Student Connects To Tutor` and
+  `Actions / Tutor Connects To Student` are public source-instance APIs
+- `Actions / Fetch My Actions` filters directly on stored `source_item_owner`
+  and `target_item_owner`
+- public action calls send the selected target item's `item_instance_url`
+- public action calls do not send `source_instance_url`; the service derives
+  that from its own runtime config
+- `Instance-to-Instance Network Calls / Perform Network Action Student To Tutor`
+  and `Perform Network Action Tutor To Student` are internal target-instance
+  APIs for direct server-to-server testing
+- `Events / Fetch My Events` filters directly on stored `source_item_owner` and
+  `target_item_owner`
+- `Instance-to-Instance Network Calls / Store Mirrored Event On Source Instance`
+  uses the latest event contract with owner ids, `origin_instance_domain`,
+  `action_status`, `update_count`, and item instance URLs
