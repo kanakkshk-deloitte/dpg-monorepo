@@ -61,6 +61,7 @@ export async function fetchLocalItemSnapshot(
     .select({
       item_id: items.item_id,
       item_instance_url: items.item_instance_url,
+      item_private_state: items.item_private_state,
       created_by: items.created_by,
       item_latitude: items.item_latitude,
       item_longitude: items.item_longitude,
@@ -83,6 +84,7 @@ export async function fetchLocalItemSnapshot(
     .select({
       item_id: items.item_id,
       item_instance_url: items.item_instance_url,
+      item_private_state: items.item_private_state,
       created_by: items.created_by,
       item_latitude: items.item_latitude,
       item_longitude: items.item_longitude,

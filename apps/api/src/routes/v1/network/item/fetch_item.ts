@@ -2,7 +2,7 @@ import z, {
   FetchItemsBodySchema,
   FetchItemsCountBodySchema,
   FetchItemsQuerySchema,
-  ItemSelectSchema,
+  ItemResponseSchema,
 } from '@dpg/schemas';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -39,7 +39,7 @@ export const fetch_item: FastifyPluginAsyncZod = async function (fastify) {
             limit: z.number(),
             offset: z.number(),
           }),
-          items: ItemSelectSchema.array(),
+          items: ItemResponseSchema.array(),
         }),
       },
     },
@@ -74,7 +74,7 @@ export const fetch_item: FastifyPluginAsyncZod = async function (fastify) {
             limit: z.number(),
             offset: z.number(),
           }),
-          items: ItemSelectSchema.array(),
+          items: ItemResponseSchema.array(),
         }),
       },
     },

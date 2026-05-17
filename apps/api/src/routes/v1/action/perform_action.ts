@@ -1,6 +1,8 @@
 import z, {
   getActionInteraction,
+  mergeItemStateWithPrivate,
   PerformActionBodySchema,
+  projectPrivateStateForSchema,
   validateAgainstJsonSchema,
 } from '@dpg/schemas';
 import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -82,6 +84,8 @@ export const perform_action_handler = async (
     });
   }
 
+  let requirementsSnapshot = body.requirements_snapshot;
+
   try {
     const networkConfig = await getNetworkConfigByName(targetItem.item_network);
     const matchedDomain = networkConfig.domains.find(
@@ -119,9 +123,17 @@ export const perform_action_handler = async (
       toItemType: targetItem.item_type,
     });
 
+    requirementsSnapshot = mergeItemStateWithPrivate(
+      body.requirements_snapshot,
+      projectPrivateStateForSchema(
+        interaction.requirement_schema,
+        sourceItemSnapshot.item_private_state
+      )
+    );
+
     validateAgainstJsonSchema(
       interaction.requirement_schema,
-      body.requirements_snapshot,
+      requirementsSnapshot,
       'action requirements',
       { allowAdditionalProperties: apiConfig.allow_extra_schema_data }
     );
@@ -156,7 +168,7 @@ export const perform_action_handler = async (
           source_item: sourceItem,
           target_item: targetItem,
           source_item_owner: sourceItemSnapshot.created_by,
-          requirements_snapshot: body.requirements_snapshot,
+          requirements_snapshot: requirementsSnapshot,
         }),
       }
     );
