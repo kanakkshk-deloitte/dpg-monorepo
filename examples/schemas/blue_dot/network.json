@@ -159,6 +159,18 @@
   "instances": [
     {
       "domain_name": "seeker",
+      "instance_name": "Blue Dot Seeker Local",
+      "instance_url": "http://localhost:2742",
+      "custom_item_schema_urls": {}
+    },
+    {
+      "domain_name": "provider",
+      "instance_name": "Blue Dot Provider Local",
+      "instance_url": "http://localhost:2742",
+      "custom_item_schema_urls": {}
+    },
+    {
+      "domain_name": "seeker",
       "instance_name": "Blue Dot Seeker",
       "instance_url": "https://ubi-backend.onest.dhiway.net",
       "custom_item_schema_urls": {}
