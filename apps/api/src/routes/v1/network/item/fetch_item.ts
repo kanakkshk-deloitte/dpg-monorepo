@@ -9,13 +9,13 @@ import { type FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import {
   isServedDomainBinding,
   replyForUnservedDomain,
-} from '../../../../utils/served_domain_guard';
+} from '@/utils/served_domain_guard';
 import {
   countLocalItems,
   fetchLocalItems,
-} from '../../../../utils/item_fetch_runtime';
-import { getNetworkConfigByName } from '../../../../network_configs';
-import { fetchItemsAcrossInstances } from '../../../../utils/inter_instance_fetch';
+} from '@/utils/item_fetch_runtime';
+import { getNetworkConfigById } from '@/network_configs';
+import { fetchItemsAcrossInstances } from '@/utils/inter_instance_fetch';
 
 type FetchItemsAggregateRequest = FastifyRequest<{
   Querystring: z.infer<typeof FetchItemsQuerySchema>;
@@ -103,10 +103,10 @@ const fetch_network_item_handler = async (
   } = request.query;
 
   try {
-    const networkConfig = await getNetworkConfigByName(item_network);
+    const networkConfig = await getNetworkConfigById(item_network);
     const domainExists = networkConfig.domains.some(
       (domain: (typeof networkConfig.domains)[number]) =>
-        domain.name === item_domain
+        domain.id === item_domain
     );
 
     if (!domainExists) {

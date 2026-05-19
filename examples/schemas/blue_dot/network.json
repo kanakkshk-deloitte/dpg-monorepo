@@ -1,11 +1,9 @@
 {
-  "name": "blue_dot",
   "display_name": "Blue Dot",
   "description": "Jobs and hiring network.",
   "schema_standard": "https://json-schema.org/draft/2020-12/schema",
   "domains": [
     {
-      "name": "seeker",
       "description": "People looking for jobs.",
       "minimum_cache_ttl_seconds": 300,
       "item_schemas": {
@@ -98,10 +96,10 @@
             }
           }
         }
-      }
+      },
+      "id": "seeker"
     },
     {
-      "name": "provider",
       "description": "Employers and recruiters posting jobs.",
       "minimum_cache_ttl_seconds": 300,
       "item_schemas": {
@@ -225,27 +223,34 @@
             }
           }
         }
-      }
+      },
+      "id": "provider"
     }
   ],
   "instances": [
     {
-      "domain_name": "seeker",
       "instance_name": "Blue Dot Seeker Local",
-      "instance_url": "http://localhost:2720",
-      "custom_item_schema_urls": {}
+      "instance_url": "http://localhost:2742",
+      "custom_item_schema_urls": {},
+      "domain_id": "seeker"
     },
     {
-      "domain_name": "provider",
       "instance_name": "Blue Dot Provider Local",
-      "instance_url": "http://localhost:2720",
-      "custom_item_schema_urls": {}
+      "instance_url": "http://localhost:2742",
+      "custom_item_schema_urls": {},
+      "domain_id": "provider"
     },
     {
-      "domain_name": "provider",
+      "instance_name": "Blue Dot Seeker",
+      "instance_url": "https://ubi-backend.onest.dhiway.net",
+      "custom_item_schema_urls": {},
+      "domain_id": "seeker"
+    },
+    {
       "instance_name": "Blue Dot Provider",
       "instance_url": "http://localhost:8082",
-      "custom_item_schema_urls": {}
+      "custom_item_schema_urls": {},
+      "domain_id": "provider"
     }
   ],
   "actions": {
@@ -376,5 +381,11 @@
         }
       ]
     }
+<<<<<<< HEAD
   }
 }
+=======
+},
+"id": "blue_dot"
+}
+>>>>>>> 8ff346605926d0d93409a8b04da22bb59dbb0c2c
