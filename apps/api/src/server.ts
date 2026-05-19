@@ -45,7 +45,12 @@ app.setSerializerCompiler(serializerCompiler);
 // CORS
 await app.register(cors, {
   origin: (origin, cb) => {
-    if (!origin || corsAllowedOrigins.includes(origin)) {
+    const isLocalDevOrigin =
+      instance.INSTANCE_ENV === 'development' &&
+      typeof origin === 'string' &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (!origin || corsAllowedOrigins.includes(origin) || isLocalDevOrigin) {
       return cb(null, true);
     } else {
       return cb(new Error('Not allowed'), false);

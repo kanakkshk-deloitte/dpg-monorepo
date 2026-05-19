@@ -1,0 +1,17 @@
+{
+    "name": "@dpg/data_service",
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev:server": "tsx src/server.ts",
+        "dev:bpp": "tsx src/mock_job_bpp.ts",
+        "dev": "pnpm run dev:server & pnpm run dev:bpp"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5"
+    },
+    "devDependencies": {
+        "tsx": "^3.12.7"
+    }
+}
