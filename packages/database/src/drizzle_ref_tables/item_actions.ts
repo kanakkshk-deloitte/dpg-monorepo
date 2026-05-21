@@ -13,7 +13,7 @@ import { sql } from 'drizzle-orm';
 export const item_actions = pgTable(
   'item_actions',
   {
-    action_type: text('action_type').notNull(),
+    action_type: text('action_name').notNull(),
     partition_network: text('partition_network').notNull(),
     action_id: uuid('action_id').defaultRandom().notNull(),
     action_status: text('action_status').notNull(),

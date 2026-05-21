@@ -16,7 +16,7 @@ import { sql } from 'drizzle-orm';
 export const action_events = pgTable(
   'action_events',
   {
-    action_type: text('action_type').notNull(),
+    action_type: text('action_name').notNull(),
     partition_network: text('partition_network').notNull(),
     event_id: uuid('event_id').defaultRandom().notNull(),
     origin_instance_domain: text('origin_instance_domain').notNull(),

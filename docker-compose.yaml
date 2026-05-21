@@ -13,9 +13,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - dpg-postgresdb:/var/lib/postgresql/data
+      - dpg-postgresdb:/var/lib/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -p 5432']
+      test: [ 'CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -p 5432' ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -40,7 +40,7 @@ services:
     volumes:
       - dpg-redis:/data
     healthcheck:
-      test: ['CMD-SHELL', 'redis-cli ${REDIS_PASSWORD:+-a ${REDIS_PASSWORD}} ping | grep PONG']
+      test: [ 'CMD-SHELL', 'redis-cli ${REDIS_PASSWORD:+-a ${REDIS_PASSWORD}} ping | grep PONG' ]
       interval: 5s
       timeout: 3s
       retries: 20

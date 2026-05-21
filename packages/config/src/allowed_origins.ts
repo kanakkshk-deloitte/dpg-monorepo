@@ -2,6 +2,8 @@ const default_allowed_origins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:2720',
+  'http://localhost:8082',
+  'http://localhost:3301',
   'http://localhost:3200',
 ];
 

@@ -79,6 +79,11 @@ async function ensureNestedListPartition(
   childValue: string,
   kind: 'i' | 'a' | 'e'
 ) {
+  // Existing deployments may have regular (non-partitioned) root tables.
+  if (!(await isTablePartitioned(db, rootTableName))) {
+    return;
+  }
+
   const networkPartitionTableName = buildPartitionTableName([network], kind);
   const leafPartitionTableName = buildPartitionTableName(
     [network, childValue],
@@ -111,6 +116,26 @@ async function ensureNestedListPartition(
     leafPartitionTableName,
     childValue
   );
+}
+
+async function isTablePartitioned(
+  db: NodePgDatabase<any>,
+  tableName: string
+) {
+  const result = (await db.execute(
+    sql.raw(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_partitioned_table pt
+        JOIN pg_class c ON c.oid = pt.partrelid
+        JOIN pg_namespace ns ON ns.oid = c.relnamespace
+        WHERE ns.nspname = current_schema()
+          AND c.relname = '${escapeSqlLiteral(tableName)}'
+      ) AS is_partitioned;
+    `)
+  )) as { rows?: Array<{ is_partitioned: boolean }> };
+
+  return result.rows?.[0]?.is_partitioned === true;
 }
 
 async function ensureListPartition(
@@ -198,6 +223,10 @@ async function assertPartitionAttachedForValue(
 function handlePartitionError(err: unknown, label: string) {
   if (err instanceof DrizzleQueryError && err.cause instanceof DatabaseError) {
     if (err.cause.code === '42P07') {
+      return;
+    }
+
+    if (err.cause.code === '42809' && err.cause.message.includes('is not partitioned')) {
       return;
     }
 
